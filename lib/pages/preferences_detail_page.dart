@@ -10,6 +10,7 @@ import '../services/database_service.dart';
 import '../services/settings_service.dart';
 import '../utils/icon_utils.dart';
 import 'ai_settings_page.dart';
+import 'calculator_disguise_page.dart';
 import '../theme/theme_style.dart';
 
 /// 二级设置页：整合常用偏好与AI快捷开关
@@ -418,7 +419,8 @@ class _PreferencesDetailPageState extends State<PreferencesDetailPage> {
 
             const SizedBox(height: 24),
 
-            // 隐私与安全
+            // 隐私与安全（定制版：入口改为「伪装计算器页」，
+            // 在计算器上输入 1234 再按「=」才会解锁真实设置）
             _buildSectionHeader(
               context,
               l10n.privacyAndSecurity,
@@ -428,17 +430,17 @@ class _PreferencesDetailPageState extends State<PreferencesDetailPage> {
             _buildPreferenceCard(
               context,
               children: [
-                _buildSwitchTile(
-                  context: context,
-                  title: l10n.requireBiometricForHidden,
-                  subtitle: _biometricAvailable
-                      ? l10n.requireBiometricForHiddenDesc
-                      : l10n.biometricNotAvailable,
-                  icon: Icons.fingerprint,
-                  value: settings.requireBiometricForHidden,
-                  onChanged: _biometricAvailable
-                      ? (v) => _handleBiometricToggle(context, v)
-                      : null,
+                ListTile(
+                  leading: const Icon(Icons.calculate_outlined),
+                  title: const Text('计算器'),
+                  subtitle: const Text('工具'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CalculatorDisguisePage(),
+                    ),
+                  ),
                 ),
               ],
             ),

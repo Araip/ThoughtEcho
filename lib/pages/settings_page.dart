@@ -274,196 +274,7 @@ class SettingsPageState extends State<SettingsPage> {
           // 周年庆典横幅（每届 3-23 至 4-30 期间显示，开发者模式可模拟）
           _buildAnniversaryBanner(context),
 
-          // 位置和天气设置 Card
-          Consumer<LocationService>(
-            builder: (context, locationService, _) => Card(
-              margin: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  ListTile(
-                    title: Text(l10n.settingsLocationWeather),
-                    leading: const Icon(Icons.location_on),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Divider(
-                      color: theme.colorScheme.outline.withAlpha(
-                        (0.2 * 255).round(),
-                      ),
-                    ),
-                  ),
-                  SwitchListTile(
-                    title: Text(l10n.settingsUseLocationService),
-                    subtitle: Text(
-                      locationService.hasLocationPermission
-                          ? (locationService.isLocationServiceEnabled
-                              ? l10n.settingsLocationEnabled
-                              : l10n.settingsLocationPermissionOnly)
-                          : l10n.settingsLocationNoPermission,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: locationService.hasLocationPermission &&
-                                locationService.isLocationServiceEnabled
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.error,
-                      ),
-                    ),
-                    value: locationService.hasLocationPermission &&
-                        locationService.isLocationServiceEnabled,
-                    onChanged: (value) async {
-                      if (value) {
-                        bool permissionGranted =
-                            await locationService.requestLocationPermission();
-                        if (!permissionGranted) {
-                          if (mounted && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.locationPermissionDenied),
-                                duration: AppConstants.snackBarDurationError,
-                              ),
-                            );
-                          }
-                          return;
-                        }
-
-                        bool serviceEnabled =
-                            await Geolocator.isLocationServiceEnabled();
-                        if (!mounted) return; // Add this check
-                        if (!serviceEnabled) {
-                          if (mounted && context.mounted) {
-                            final currentContext =
-                                context; // Capture context before async gap
-                            showDialog(
-                              context: currentContext,
-                              builder: (context) => AlertDialog(
-                                title: Text(l10n.enableLocationService),
-                                content: Text(l10n.enableLocationServiceDesc),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(currentContext),
-                                    child: Text(l10n.cancel),
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      if (!currentContext.mounted) {
-                                        return; // Check mounted before pop
-                                      }
-                                      Navigator.pop(currentContext);
-                                      await Geolocator.openLocationSettings();
-                                      if (!mounted) return; // Add this check
-                                    },
-                                    child: Text(l10n.goToSettings),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                          return;
-                        }
-
-                        if (mounted && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(l10n.gettingLocation),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        }
-                        final position =
-                            await locationService.getCurrentLocation();
-                        if (!mounted) return; // Add this check
-                        if (position != null) {
-                          if (context.mounted) {
-                            final scaffoldMessenger = ScaffoldMessenger.of(
-                              context,
-                            );
-                            scaffoldMessenger.removeCurrentSnackBar();
-                            scaffoldMessenger.showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.locationServiceEnabled),
-                                duration:
-                                    AppConstants.snackBarDurationImportant,
-                              ),
-                            );
-                          }
-                          setState(() {
-                            _locationController.text =
-                                locationService.getFormattedLocation();
-                          });
-                        } else {
-                          if (!mounted) return;
-                          if (context.mounted) {
-                            final scaffoldMessenger = ScaffoldMessenger.of(
-                              context,
-                            );
-                            scaffoldMessenger.removeCurrentSnackBar();
-                            scaffoldMessenger.showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.cannotGetLocation),
-                                duration: AppConstants.snackBarDurationError,
-                              ),
-                            );
-                          }
-                        }
-                      } else {
-                        if (!mounted) return;
-                        if (context.mounted) {
-                          final scaffoldMessenger =
-                              ScaffoldMessenger.of(context);
-                          scaffoldMessenger.showSnackBar(
-                            SnackBar(
-                              content: Text(l10n.locationServiceDisabled),
-                              duration: AppConstants.snackBarDurationNormal,
-                            ),
-                          );
-                        }
-                      }
-                      if (mounted) {
-                        setState(() {});
-                      }
-                    },
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 8.0,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.settingsSetLocation,
-                          style: theme.textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 8.0),
-                        FilledButton.tonalIcon(
-                          icon: const Icon(Icons.search),
-                          label: Text(l10n.settingsSearchCity),
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(50),
-                          ),
-                          onPressed: () {
-                            _showCitySearchDialog(context);
-                          },
-                        ),
-                        const SizedBox(height: 8.0),
-                        Text(
-                          '${l10n.settingsCurrentLocation}: ${locationService.currentAddress ?? l10n.settingsNotSet}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 8.0),
-                      ],
-                    ),
-                  ),
-                  // 当前天气信息已移动到"搜索并选择城市"对话框内
-                ],
-              ),
-            ),
-          ),
-
+          // 「位置和天气」设置卡片已移除（定制版：不含定位功能）
           // 应用设置 Card (保持不变)
           Card(
             margin: const EdgeInsets.all(8.0),
@@ -518,20 +329,7 @@ class SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
-                ListTile(
-                  title: Text(l10n.settingsAI),
-                  subtitle: Text(l10n.settingsAIDesc),
-                  leading: const Icon(Icons.auto_awesome),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AISettingsPage(),
-                      ),
-                    );
-                  },
-                ),
+                // 定制版：已移除「AI 设置」入口
                 // 智能推送
                 Builder(
                   builder: (context) {
@@ -551,20 +349,7 @@ class SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
-                ListTile(
-                  title: Text(l10n.settingsHitokoto),
-                  subtitle: Text(l10n.settingsHitokotoDesc),
-                  leading: const Icon(Icons.format_quote_outlined),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HitokotoSettingsPage(),
-                      ),
-                    );
-                  },
-                ),
+                // 「每日一言」入口已移除（定制版）
                 // 日志和实验性开关已移至「实验室」Card（_buildLabSection）
                 // 存储管理
                 ListTile(
@@ -940,29 +725,7 @@ class SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
 
-                // 检查更新 ListTile
-                ListTile(
-                  title: Text(l10n.settingsCheckUpdate),
-                  subtitle: _updateCheckMessage != null
-                      ? Text(
-                          _updateCheckMessage!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        )
-                      : Text(l10n.settingsCheckUpdateDesc),
-                  leading: _isCheckingUpdate
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.system_update),
-                  trailing: _isCheckingUpdate
-                      ? null
-                      : const Icon(Icons.chevron_right),
-                  onTap: _isCheckingUpdate ? null : () => _checkForUpdates(),
-                ),
+                // 「检查更新」入口已移除（定制版）
               ],
             ),
           ),
@@ -1081,55 +844,7 @@ class SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
-              // 本地 AI 功能入口（实验室统一收口开发者模式可见性）
-              ListTile(
-                title: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        l10n.localAiFeatures,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.tertiary.withValues(
-                          alpha: 0.2,
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: theme.colorScheme.tertiary.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
-                      child: Text(
-                        l10n.localAiFeaturesPreview,
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelSmall
-                            ?.copyWith(color: theme.colorScheme.tertiary),
-                      ),
-                    ),
-                  ],
-                ),
-                subtitle: Text(l10n.localAiFeaturesDesc),
-                leading: const Icon(Icons.device_hub),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LocalAISettingsPage(),
-                    ),
-                  );
-                },
-              ),
+              // 定制版：已移除「本地 AI 功能」入口
 
               // 记录页禁用卡片阴影
               SwitchListTile(

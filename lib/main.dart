@@ -572,26 +572,7 @@ Future<void> main() async {
             });
 
             // 启动后台版本检查（静默执行，不影响用户体验）
-            VersionCheckService.backgroundCheckForUpdates(
-              onUpdateAvailable: (versionInfo) {
-                logInfo(
-                  '检测到新版本: ${versionInfo.latestVersion}',
-                  source: 'VersionCheck',
-                );
-                // 延迟显示更新对话框，确保UI已完全初始化
-                Future.delayed(const Duration(seconds: 2), () {
-                  try {
-                    final context = navigatorKey.currentContext;
-                    if (context != null && context.mounted) {
-                      UpdateDialogHelper.showUpdateDialog(context, versionInfo);
-                    }
-                  } catch (e) {
-                    logWarning('显示更新对话框失败: $e', source: 'VersionCheck');
-                  }
-                });
-              },
-              delay: const Duration(seconds: 5), // 延迟5秒执行
-            );
+            // 更新检测已移除（定制版：不再检查更新、不再弹出更新提示）
           } catch (e, stackTrace) {
             logError(
               '后台服务初始化失败: $e',

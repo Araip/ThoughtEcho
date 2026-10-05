@@ -51,18 +51,7 @@ extension _ExploreOverview on _ExplorePageState {
             ],
             const SizedBox(height: 20),
 
-            // 洞察 + Thoughter 入口：洞察本身就是 Thoughter 生成的，
-            // 让它直接长出追问入口，而不是下面再单独摆一张「与 Thoughter 对话」卡
-            _buildInsightBulbBar(),
-            const SizedBox(height: 10),
-            _buildThoughterQuickAsks(),
-            const SizedBox(height: 20),
-            _buildRecentSessionsSection(),
-            const SizedBox(height: 4),
-
-            // 按地点读笔记的入口，和上面按时间读的 Thoughter 并列
-            _buildMapMemoryEntry(),
-            const SizedBox(height: 20),
+            // 定制版：已移除「洞察 / Thoughter(AI 对话) / 最近会话 / 地图回忆」入口
 
             if (_periodQuotes.isNotEmpty) ...[
               _buildPeriodTopFavoritesSection(),

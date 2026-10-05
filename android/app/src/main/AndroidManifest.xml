@@ -113,9 +113,7 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
 
-    <!-- 位置权限 -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- 位置权限已移除（定制版：不申请定位权限） -->
 
     <!-- 存储权限 (符合 Google Play 分区存储政策：Android 13+ 使用 READ_MEDIA_*，旧版本受限访问) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"

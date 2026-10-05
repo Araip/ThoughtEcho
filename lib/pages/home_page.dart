@@ -21,6 +21,7 @@ import 'explore_page.dart';
 import 'release_notes_page.dart';
 import 'settings_page.dart';
 import 'note_full_editor_page.dart';
+import 'category_home_page.dart';
 import '../services/settings_service.dart'; // Import SettingsService
 import '../utils/app_logger.dart';
 import '../utils/aptabase_helper.dart';
@@ -917,63 +918,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         body: IndexedStack(
           index: _pageController.currentIndex,
           children: [
-            // 首页 - 每日一言和每日提示
-            RefreshIndicator(
-              onRefresh: _refreshCoordinator.refresh,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final screenHeight = constraints.maxHeight;
-                  final screenWidth = constraints.maxWidth;
-                  final isSmallScreen = screenHeight < 600;
-                  final isVerySmallScreen = screenHeight < 550;
-
-                  return SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    child: SizedBox(
-                      height: screenHeight, // 确保占满整个屏幕高度
-                      child: Column(
-                        children: [
-                          // 每日一言部分 - 占用大部分空间，但保留足够空间给今日思考。
-                          //
-                          // 卡片刻意撑满这块区域而不是按内容收缩：试过收缩版
-                          // （2026-08-16 出图比对），一言只有一两行时卡片缩成中间
-                          // 一条，留白全跑到页面上，首页反而更空。撑满的版本把留白
-                          // 收在卡片内部，一言居中，观感更稳。
-                          Expanded(
-                            child: Container(
-                              key: _dailyQuoteGuideKey, // 功能引导 key
-                              constraints: BoxConstraints(
-                                minHeight: screenHeight *
-                                    (isVerySmallScreen
-                                        ? 0.55
-                                        : 0.50), // 极小屏幕调整比例
-                              ),
-                              child: DailyQuoteView(
-                                key: _dailyQuoteViewKey,
-                                onAddQuote:
-                                    (content, author, work, hitokotoData) =>
-                                        _showAddQuoteDialog(
-                                  prefilledContent: content,
-                                  prefilledAuthor: author,
-                                  prefilledWork: work,
-                                  hitokotoData: hitokotoData,
-                                ),
-                              ),
-                            ),
-                          ),
-                          HomeDailyPromptPanel(
-                            key: _dailyPromptPanelKey,
-                            screenWidth: screenWidth,
-                            isSmallScreen: isSmallScreen,
-                            isVerySmallScreen: isVerySmallScreen,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+            // 定制版：便签分类页（替代原「每日一言」首页，作为默认主页）
+            const CategoryHomePage(),
             // 笔记列表页
             Consumer<SettingsService>(
               builder: (context, settingsService, child) {
@@ -1091,12 +1037,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             surfaceTintColor: Colors.transparent,
             destinations: [
               NavigationDestination(
-                icon: const Icon(Icons.home_outlined),
+                icon: const Icon(Icons.category_outlined),
                 selectedIcon: Icon(
-                  Icons.home,
+                  Icons.category,
                   color: theme.colorScheme.primary,
                 ),
-                label: AppLocalizations.of(context).navHome,
+                label: '分类',
               ),
               NavigationDestination(
                 icon: const Icon(Icons.book_outlined),
