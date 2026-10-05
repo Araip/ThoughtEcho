@@ -8,6 +8,7 @@ import '../extensions/note_tag_localization_extension.dart';
 import '../models/note_tag.dart';
 import '../models/quote_model.dart';
 import '../services/clipboard_service.dart';
+import '../services/database_service.dart';
 import '../services/location_service.dart';
 import '../services/settings_service.dart';
 import '../services/weather_service.dart';
@@ -21,6 +22,7 @@ import '../widgets/common/paper_rule_background.dart';
 import '../widgets/quote_content_widget.dart';
 import 'app_snackbar.dart';
 import 'quote_card_helpers.dart';
+import 'tag_picker_sheet.dart';
 import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 优化：使用StatefulWidget以支持双击反馈动画，数据变化通过父组件管理
@@ -1282,15 +1284,15 @@ class _QuoteItemWidgetState extends State<QuoteItemWidget>
           ),
         ),
         PopupMenuItem<String>(
-          value: 'ask',
+          value: 'move_tag',
           child: Row(
             children: [
               Icon(
-                Icons.lightbulb_outline,
+                Icons.label_outline,
                 color: theme.colorScheme.primary,
               ),
               const SizedBox(width: 8),
-              Text(l10n.askAIMenu),
+              const Text('移动至标签'),
             ],
           ),
         ),
@@ -1305,20 +1307,6 @@ class _QuoteItemWidgetState extends State<QuoteItemWidget>
                 ),
                 const SizedBox(width: 8),
                 Text(l10n.exportToPdf),
-              ],
-            ),
-          )
-        else if (widget.onGenerateCard != null)
-          PopupMenuItem<String>(
-            value: 'generate_card',
-            child: Row(
-              children: [
-                Icon(
-                  Icons.auto_awesome,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(l10n.generateCardShareMenu),
               ],
             ),
           ),
@@ -1354,12 +1342,10 @@ class _QuoteItemWidgetState extends State<QuoteItemWidget>
 
     if (!mounted || selected == null) return;
     switch (selected) {
-      case 'ask':
-        widget.onAskAI();
       case 'edit':
         widget.onEdit();
-      case 'generate_card':
-        widget.onGenerateCard?.call();
+      case 'move_tag':
+        await _openMoveToTag();
       case 'export_pdf':
         widget.onExportPdf?.call();
       case 'copy_text':
@@ -1370,6 +1356,38 @@ class _QuoteItemWidgetState extends State<QuoteItemWidget>
         }
       case 'delete':
         widget.onDelete();
+    }
+  }
+
+  /// 定制版：把当前笔记「移动至」某个标签。
+  Future<void> _openMoveToTag() async {
+    final String? quoteId = widget.quote.id;
+    if (quoteId == null || quoteId.isEmpty) {
+      AppSnackBar.error(context, '该笔记尚未保存，无法移动');
+      return;
+    }
+
+    final NoteTag? tag = await showTagPicker(
+      context,
+      selectedId:
+          widget.quote.tagIds.isEmpty ? null : widget.quote.tagIds.first,
+      title: '移动至标签',
+    );
+    if (tag == null || !mounted) return;
+
+    try {
+      final DatabaseService db = context.read<DatabaseService>();
+      await db.updateQuote(
+        widget.quote.copyWith(
+          tagIds: <String>[tag.id],
+          lastModified: DateTime.now().toIso8601String(),
+        ),
+      );
+      if (!mounted) return;
+      AppSnackBar.success(context, '已移动至「${tag.name}」');
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackBar.error(context, '移动失败：$e');
     }
   }
 

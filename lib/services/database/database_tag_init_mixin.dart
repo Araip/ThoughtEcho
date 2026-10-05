@@ -5,6 +5,9 @@ mixin _DatabaseTagInitMixin on _DatabaseServiceBase {
   /// 初始化默认一言标签标签
   @override
   Future<void> initDefaultHitokotoTags() async {
+    // 定制版：清除全部内置系统标签（含历史安装数据）
+    await _purgeBuiltinTags();
+
     if (kIsWeb) {
       // Web 平台逻辑：检查内存中的 _tagStore
       final defaultCategories = _getDefaultHitokotoTags();
@@ -242,81 +245,37 @@ mixin _DatabaseTagInitMixin on _DatabaseServiceBase {
     await txn.delete('categories', where: 'id = ?', whereArgs: [oldId]);
   }
 
-  /// 获取默认一言标签列表
+  /// 获取默认标签列表
+  ///
+  /// 定制版：不再创建任何内置标签（用户要求删除系统自带的全部标签）。
   List<NoteTag> _getDefaultHitokotoTags() {
-    return [
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdHitokoto, // 使用固定 ID
-        name: '每日一言',
-        isDefault: true,
-        iconName: 'format_quote',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdAnime, // 使用固定 ID
-        name: '动画',
-        isDefault: true,
-        iconName: '🎬',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdComic, // 使用固定 ID
-        name: '漫画',
-        isDefault: true,
-        iconName: '📚',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdGame, // 使用固定 ID
-        name: '游戏',
-        isDefault: true,
-        iconName: '🎮',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdNovel, // 使用固定 ID
-        name: '文学',
-        isDefault: true,
-        iconName: '📖',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdOriginal, // 使用固定 ID
-        name: '原创',
-        isDefault: true,
-        iconName: '✨',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdInternet, // 使用固定 ID
-        name: '来自网络',
-        isDefault: true,
-        iconName: '🌐',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdOther, // 使用固定 ID
-        name: '其他',
-        isDefault: true,
-        iconName: '📦',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdMovie, // 使用固定 ID
-        name: '影视',
-        isDefault: true,
-        iconName: '🎞️',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdPoem, // 使用固定 ID
-        name: '诗词',
-        isDefault: true,
-        iconName: '🪶',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdMusic, // 使用固定 ID
-        name: '网易云',
-        isDefault: true,
-        iconName: '🎧',
-      ),
-      NoteTag(
-        id: _DatabaseServiceBase.defaultTagIdPhilosophy, // 使用固定 ID
-        name: '哲学',
-        isDefault: true,
-        iconName: '🤔',
-      ),
-    ];
+    return const <NoteTag>[];
+  }
+
+  /// 定制版：删除全部内置系统标签及其与笔记的标签关联。
+  Future<void> _purgeBuiltinTags() async {
+    try {
+      if (kIsWeb) {
+        final before = _tagStore.length;
+        _tagStore.removeWhere(
+          (c) => _DatabaseServiceBase.systemTagIds.contains(c.id),
+        );
+        if (before != _tagStore.length && !_tagsController.isClosed) {
+          _tagsController.add(List.unmodifiable(_tagStore));
+        }
+        return;
+      }
+
+      if (_DatabaseServiceBase._database == null) return;
+      final db = database;
+      final ids = _DatabaseServiceBase.systemTagIds.toList();
+      if (ids.isEmpty) return;
+      final holders = List<String>.filled(ids.length, '?').join(',');
+      await db.delete('quote_tags', where: 'tag_id IN ($holders)', whereArgs: ids);
+      await db.delete('categories', where: 'id IN ($holders)', whereArgs: ids);
+      logDebug('已清理内置标签 ${ids.length} 个', source: 'DatabaseService');
+    } catch (e) {
+      logWarning('清理内置标签失败: ${e.runtimeType}', source: 'DatabaseService');
+    }
   }
 }

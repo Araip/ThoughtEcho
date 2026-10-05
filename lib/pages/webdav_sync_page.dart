@@ -6,6 +6,7 @@ import '../models/quote_model.dart';
 import '../services/database_service.dart';
 import '../services/mmkv_service.dart';
 import '../services/webdav_sync_service.dart';
+import 'nutstore_import_page.dart';
 import '../utils/lww_utils.dart';
 import '../utils/app_logger.dart';
 import '../utils/aptabase_helper.dart';
@@ -880,6 +881,22 @@ class _WebDAVSyncPageState extends State<WebDAVSyncPage> {
                 ),
               ),
             ],
+
+                  // --- 坚果云文档导入 Section（与云同步同一页面）---
+                  const Divider(height: 32, thickness: 0.8),
+                  Text(
+                    '坚果云文档导入',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(color: theme.colorScheme.primary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '从 坚果云/易码 与 坚果云/hnote-data-v2 读取明文文档并导入为便签。',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 8),
+                  const NutstoreImportBody(embedded: true),
+                  const SizedBox(height: 20),
 
             // 立即同步按钮（仅在启用后且不在同步中时提供）
             if (syncService.enabled && !syncService.isSyncing) ...[

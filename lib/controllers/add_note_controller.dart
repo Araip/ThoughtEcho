@@ -83,36 +83,10 @@ class AddNoteController extends ChangeNotifier {
   NoteTag? selectedCategory;
 
   // 标签名称到固定分类 ID 的映射，避免O(N)遍历
-  static const Map<String, String> hitokotoTagNameToCategoryIdMap = {
-    '动画': DatabaseService.defaultTagIdAnime,
-    '漫画': DatabaseService.defaultTagIdComic,
-    '游戏': DatabaseService.defaultTagIdGame,
-    '文学': DatabaseService.defaultTagIdNovel,
-    '原创': DatabaseService.defaultTagIdOriginal,
-    '来自网络': DatabaseService.defaultTagIdInternet,
-    '其他': DatabaseService.defaultTagIdOther,
-    '影视': DatabaseService.defaultTagIdMovie,
-    '诗词': DatabaseService.defaultTagIdPoem,
-    '网易云': DatabaseService.defaultTagIdMusic,
-    '哲学': DatabaseService.defaultTagIdPhilosophy,
-    '抖机灵': DatabaseService.defaultTagIdJoke,
-  };
+  static const Map<String, String> hitokotoTagNameToCategoryIdMap = <String, String>{};
 
   // 一言类型到固定分类 ID 的映射
-  static const Map<String, String> hitokotoTypeToCategoryIdMap = {
-    'a': DatabaseService.defaultTagIdAnime, // 动画
-    'b': DatabaseService.defaultTagIdComic, // 漫画
-    'c': DatabaseService.defaultTagIdGame, // 游戏
-    'd': DatabaseService.defaultTagIdNovel, // 文学
-    'e': DatabaseService.defaultTagIdOriginal, // 原创
-    'f': DatabaseService.defaultTagIdInternet, // 来自网络
-    'g': DatabaseService.defaultTagIdOther, // 其他
-    'h': DatabaseService.defaultTagIdMovie, // 影视
-    'i': DatabaseService.defaultTagIdPoem, // 诗词
-    'j': DatabaseService.defaultTagIdMusic, // 网易云
-    'k': DatabaseService.defaultTagIdPhilosophy, // 哲学
-    'l': DatabaseService.defaultTagIdJoke, // 抖机灵
-  };
+  static const Map<String, String> hitokotoTypeToCategoryIdMap = <String, String>{};
 
   // 一言类型代码到标签名称的映射
   static const Map<String, String> hitokotoTypeToTagNameMap = {

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/note_tag.dart';
 import '../models/quote_model.dart';
 import '../services/database_service.dart';
+import '../widgets/tag_picker_sheet.dart';
 import 'note_full_editor_page.dart';
 
 /// 定制版：便签分类页
@@ -314,6 +315,9 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
 }
 
 /// 定制版：某个分类下的便签列表。
+///
+/// 支持：点击条目直接进入编辑（进入即聚焦正文）、长按进入多选、
+/// 一键全选、批量「移动至标签」、批量删除，以及按标签分组筛选。
 class CategoryNotesPage extends StatefulWidget {
   const CategoryNotesPage({
     super.key,
@@ -332,7 +336,13 @@ class CategoryNotesPage extends StatefulWidget {
 
 class _CategoryNotesPageState extends State<CategoryNotesPage> {
   bool _loading = true;
+  bool _busy = false;
   List<Quote> _quotes = const <Quote>[];
+  List<NoteTag> _tags = const <NoteTag>[];
+  final Set<String> _selectedIds = <String>{};
+  String? _filterTagId;
+
+  bool get _selectionMode => _selectedIds.isNotEmpty;
 
   @override
   void initState() {
@@ -346,6 +356,7 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
     if (!mounted) return;
     final DatabaseService db = context.read<DatabaseService>();
     List<Quote> quotes = const <Quote>[];
+    List<NoteTag> tags = const <NoteTag>[];
     try {
       quotes = await db.getUserQuotes(
         categoryId: widget.categoryId,
@@ -354,11 +365,35 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
     } catch (_) {
       quotes = const <Quote>[];
     }
+    try {
+      tags = await db.getTags();
+    } catch (_) {
+      tags = const <NoteTag>[];
+    }
     if (!mounted) return;
+    final Set<String> alive = quotes
+        .map((Quote q) => q.id)
+        .whereType<String>()
+        .toSet();
     setState(() {
       _quotes = quotes;
+      _tags = tags
+          .where((NoteTag t) => t.id != DatabaseService.hiddenTagId)
+          .toList();
+      _selectedIds.removeWhere((String id) => !alive.contains(id));
+      if (_filterTagId != null &&
+          !_tags.any((NoteTag t) => t.id == _filterTagId)) {
+        _filterTagId = null;
+      }
       _loading = false;
     });
+  }
+
+  /// 当前标签筛选下可见的便签。
+  List<Quote> get _visible {
+    final String? f = _filterTagId;
+    if (f == null) return _quotes;
+    return _quotes.where((Quote q) => q.tagIds.contains(f)).toList();
   }
 
   Future<void> _openQuote(Quote quote) async {
@@ -375,52 +410,259 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
     }
   }
 
+  // ── 多选 ────────────────────────────────────────────────
+
+  void _toggleSelected(Quote quote) {
+    final String? id = quote.id;
+    if (id == null) return;
+    setState(() {
+      if (!_selectedIds.add(id)) {
+        _selectedIds.remove(id);
+      }
+    });
+  }
+
+  void _selectAll() {
+    setState(() {
+      _selectedIds
+        ..clear()
+        ..addAll(_visible.map((Quote q) => q.id).whereType<String>());
+    });
+  }
+
+  void _clearSelection() {
+    setState(_selectedIds.clear);
+  }
+
+  List<Quote> get _selectedQuotes =>
+      _quotes.where((Quote q) => _selectedIds.contains(q.id)).toList();
+
+  Future<void> _moveSelectedToTag() async {
+    final List<Quote> targets = _selectedQuotes;
+    if (targets.isEmpty) return;
+    final NoteTag? tag = await showTagPicker(
+      context,
+      title: '移动 ${targets.length} 条便签至标签',
+    );
+    if (tag == null || !mounted) return;
+
+    setState(() => _busy = true);
+    final DatabaseService db = context.read<DatabaseService>();
+    final String now = DateTime.now().toIso8601String();
+    int ok = 0;
+    for (final Quote q in targets) {
+      try {
+        await db.updateQuote(
+          q.copyWith(tagIds: <String>[tag.id], lastModified: now),
+        );
+        ok++;
+      } catch (_) {
+        // 单条失败不阻塞其余。
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _selectedIds.clear();
+    });
+    await _load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已移动 $ok 条至「${tag.name}」')),
+    );
+  }
+
+  Future<void> _deleteSelected() async {
+    final List<Quote> targets = _selectedQuotes;
+    if (targets.isEmpty) return;
+    final bool? sure = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('删除便签'),
+        content: Text('确定删除选中的 ${targets.length} 条便签吗？'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+
+    setState(() => _busy = true);
+    final DatabaseService db = context.read<DatabaseService>();
+    int ok = 0;
+    for (final Quote q in targets) {
+      final String? id = q.id;
+      if (id == null) continue;
+      try {
+        await db.deleteQuote(id);
+        ok++;
+      } catch (_) {
+        // 单条失败不阻塞其余。
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _busy = false;
+      _selectedIds.clear();
+    });
+    await _load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已删除 $ok 条')),
+    );
+  }
+
+  // ── UI ──────────────────────────────────────────────────
+
+  Widget _buildTagFilterBar(ThemeData theme) {
+    return SizedBox(
+      height: 46,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
+            child: FilterChip(
+              label: Text('全部（${_quotes.length}）'),
+              selected: _filterTagId == null,
+              onSelected: (_) => setState(() => _filterTagId = null),
+            ),
+          ),
+          for (final NoteTag tag in _tags)
+            Padding(
+              padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
+              child: FilterChip(
+                label: Text(tag.name),
+                selected: _filterTagId == tag.id,
+                onSelected: (_) => setState(() {
+                  _filterTagId = _filterTagId == tag.id ? null : tag.id;
+                }),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final List<Quote> visible = _visible;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(
+          _selectionMode ? '已选 ${_selectedIds.length} 条' : widget.title,
+        ),
+        leading: _selectionMode
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: '退出多选',
+                onPressed: _clearSelection,
+              )
+            : null,
+        actions: <Widget>[
+          if (!_selectionMode)
+            IconButton(
+              icon: const Icon(Icons.checklist),
+              tooltip: '多选',
+              onPressed:
+                  visible.isEmpty ? null : () => setState(_selectAll),
+            )
+          else ...<Widget>[
+            IconButton(
+              icon: const Icon(Icons.select_all),
+              tooltip: '全选',
+              onPressed: _selectAll,
+            ),
+            IconButton(
+              icon: const Icon(Icons.label_outline),
+              tooltip: '移动至标签',
+              onPressed: _busy ? null : _moveSelectedToTag,
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: '删除',
+              onPressed: _busy ? null : _deleteSelected,
+            ),
+          ],
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _quotes.isEmpty
-              ? Center(
-                  child: Text(
-                    '这个分类下还没有便签',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 96),
-                    itemCount: _quotes.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (BuildContext context, int index) {
-                      final Quote quote = _quotes[index];
-                      return ListTile(
-                        title: Text(
-                          quote.content,
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          quote.date,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
+          : Column(
+              children: <Widget>[
+                if (_busy) const LinearProgressIndicator(),
+                _buildTagFilterBar(theme),
+                const Divider(height: 1),
+                Expanded(
+                  child: visible.isEmpty
+                      ? Center(
+                          child: Text(
+                            _quotes.isEmpty
+                                ? '这个分类下还没有便签'
+                                : '该标签下还没有便签',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _load,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(8, 8, 8, 96),
+                            itemCount: visible.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 1),
+                            itemBuilder: (BuildContext context, int index) {
+                              final Quote quote = visible[index];
+                              final bool checked = quote.id != null &&
+                                  _selectedIds.contains(quote.id);
+                              return ListTile(
+                                leading: _selectionMode
+                                    ? Checkbox(
+                                        value: checked,
+                                        onChanged: (_) =>
+                                            _toggleSelected(quote),
+                                      )
+                                    : null,
+                                title: Text(
+                                  quote.content,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                subtitle: Text(
+                                  quote.date,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                                trailing: _selectionMode
+                                    ? null
+                                    : const Icon(
+                                        Icons.chevron_right,
+                                        size: 18,
+                                      ),
+                                onTap: _selectionMode
+                                    ? () => _toggleSelected(quote)
+                                    : () => _openQuote(quote),
+                                onLongPress: () => _toggleSelected(quote),
+                              );
+                            },
                           ),
                         ),
-                        trailing: const Icon(Icons.chevron_right, size: 18),
-                        onTap: () => _openQuote(quote),
-                      );
-                    },
-                  ),
                 ),
+              ],
+            ),
     );
   }
 }

@@ -6,6 +6,7 @@ import '../models/note_tag.dart';
 import '../services/biometric_service.dart';
 import '../services/clipboard_service.dart';
 import '../services/database_service.dart';
+import '../services/disguise_service.dart';
 import '../services/settings_service.dart';
 import '../utils/icon_utils.dart';
 import 'calculator_disguise_page.dart';
@@ -24,10 +25,48 @@ class _PreferencesDetailPageState extends State<PreferencesDetailPage> {
   final BiometricService _biometricService = BiometricService();
   bool _biometricAvailable = false;
 
+  /// 定制版：桌面名称/图标是否已伪装成「计算器」。
+  bool _disguiseEnabled = false;
+
   @override
   void initState() {
     super.initState();
     _checkBiometricAvailability();
+    _loadDisguiseState();
+  }
+
+  /// 定制版：读取启动器伪装状态（由系统持久化，这里只做回显）。
+  Future<void> _loadDisguiseState() async {
+    final enabled = await DisguiseService.isEnabled();
+    if (!mounted) return;
+    setState(() {
+      _disguiseEnabled = enabled;
+    });
+  }
+
+  /// 定制版：切换「伪装计算器」——桌面名称与图标一起变。
+  Future<void> _handleDisguiseToggle(BuildContext context, bool enabled) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await DisguiseService.setEnabled(enabled);
+    if (!mounted) return;
+    if (ok) {
+      setState(() {
+        _disguiseEnabled = enabled;
+      });
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            enabled
+                ? '已伪装为「计算器」，桌面名称与图标已更换（部分机型桌面需稍等几秒刷新）'
+                : '已恢复为「心迹」名称与图标',
+          ),
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('伪装切换失败，请确认在 Android 真机上使用')),
+      );
+    }
   }
 
   Future<void> _checkBiometricAvailability() async {
@@ -394,8 +433,9 @@ class _PreferencesDetailPageState extends State<PreferencesDetailPage> {
 
             const SizedBox(height: 24),
 
-            // 隐私与安全（定制版：入口改为「伪装计算器页」，
-            // 在计算器上输入 1234 再按「=」才会解锁真实设置）
+            // 隐私与安全（定制版：
+            // ① 开关「伪装计算器」→ 桌面应用名称与图标一起变成计算器；
+            // ② 计算器入口页面里输入 1234 再按「=」解锁真实设置）
             _buildSectionHeader(
               context,
               l10n.privacyAndSecurity,
@@ -405,6 +445,15 @@ class _PreferencesDetailPageState extends State<PreferencesDetailPage> {
             _buildPreferenceCard(
               context,
               children: [
+                _buildSwitchTile(
+                  context: context,
+                  title: '伪装计算器',
+                  subtitle: '桌面名称与图标自动变成「计算器」，打开后先看到计算器界面',
+                  icon: Icons.calculate_outlined,
+                  value: _disguiseEnabled,
+                  onChanged: (v) => _handleDisguiseToggle(context, v),
+                ),
+                _buildDivider(),
                 ListTile(
                   leading: const Icon(Icons.calculate_outlined),
                   title: const Text('计算器'),

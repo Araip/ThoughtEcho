@@ -1,4 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,17 +11,31 @@ import '../models/quote_model.dart';
 import '../services/database_service.dart';
 import '../services/nutstore_import_service.dart';
 
-/// 定制版：坚果云明文文档导入页
-///
-/// 从「坚果云/易码」与「坚果云/hnote-data-v2」拉取明文文档并写入便签库。
-class NutstoreImportPage extends StatefulWidget {
+/// 定制版：坚果云文档导入（独立页面入口）
+class NutstoreImportPage extends StatelessWidget {
   const NutstoreImportPage({super.key});
 
   @override
-  State<NutstoreImportPage> createState() => _NutstoreImportPageState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('坚果云文档导入')),
+      body: const SafeArea(child: NutstoreImportBody()),
+    );
+  }
 }
 
-class _NutstoreImportPageState extends State<NutstoreImportPage> {
+/// 定制版：坚果云文档导入正文（可直接嵌入云同步页的标签页）
+class NutstoreImportBody extends StatefulWidget {
+  const NutstoreImportBody({super.key, this.embedded = false});
+
+  /// 嵌入其它滚动页面时置为 true，避免嵌套滚动冲突。
+  final bool embedded;
+
+  @override
+  State<NutstoreImportBody> createState() => _NutstoreImportBodyState();
+}
+
+class _NutstoreImportBodyState extends State<NutstoreImportBody> {
   final TextEditingController _server = TextEditingController(
     text: 'https://dav.jianguoyun.com/dav/',
   );
@@ -29,6 +48,7 @@ class _NutstoreImportPageState extends State<NutstoreImportPage> {
   static const String _kDone = 'nutstore_import_done';
 
   List<NutstoreEntry> _entries = <NutstoreEntry>[];
+  Map<String, String> _assets = <String, String>{};
   bool _busy = false;
   String _status = '填写账号后点击「扫描目录」。';
 
@@ -84,19 +104,23 @@ class _NutstoreImportPageState extends State<NutstoreImportPage> {
     });
     await _savePrefs();
     try {
-      final List<NutstoreEntry> list = await _service().scan();
+      final NutstoreScanResult res = await _service().scan();
       if (!mounted) return;
       final SharedPreferences sp = await SharedPreferences.getInstance();
       final Set<String> done =
           (sp.getStringList(_kDone) ?? <String>[]).toSet();
       final int fresh =
-          list.where((NutstoreEntry e) => !done.contains(e.url)).length;
+          res.documents.where((NutstoreEntry e) => !done.contains(e.url)).length;
+      final int withImages =
+          res.documents.where((NutstoreEntry e) => e.images.isNotEmpty).length;
       setState(() {
-        _entries = list;
+        _entries = res.documents;
+        _assets = res.assets;
         _busy = false;
-        _status = list.isEmpty
+        _status = res.documents.isEmpty
             ? '没有找到可导入的明文文档（检查账号密码 / 目录名）。'
-            : '共 ${list.length} 个文档，其中 $fresh 个尚未导入。';
+            : '共 ${res.documents.length} 个文档（$withImages 个含图片），'
+                '其中 $fresh 个尚未导入；可用图片 ${res.assets.length} 张。';
       });
     } catch (e) {
       if (!mounted) return;
@@ -107,15 +131,48 @@ class _NutstoreImportPageState extends State<NutstoreImportPage> {
     }
   }
 
-  // ── 导入 ─────────────────────────────────────────────────
+  // ── 图片落盘 ─────────────────────────────────────────────
 
-  String _compose(String title, String body) {
-    final String t = title.trim();
-    if (t.isEmpty) return body;
-    final String head = body.trimLeft();
-    if (head.startsWith('# ') || head.startsWith(t)) return body;
-    return '# $t\n\n$body';
+  Future<String> _saveImage(String name, List<int> bytes) async {
+    final Directory docs = await getApplicationDocumentsDirectory();
+    final Directory dir = Directory(p.join(docs.path, 'media', 'images'));
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    final String safe =
+        'nutstore_${DateTime.now().millisecondsSinceEpoch}_${name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_')}';
+    final File f = File(p.join(dir.path, safe));
+    await f.writeAsBytes(bytes, flush: true);
+    return f.path;
   }
+
+  /// 组装 Quill Delta：标题 + 正文 + 图片嵌入。
+  String _buildDelta(String title, String body, List<String> images) {
+    final String head = body.trim();
+    final String t = title.trim();
+    final String text = t.isEmpty ? head : '# $t\n\n$head';
+    final List<Object> ops = <Object>[];
+    if (text.isNotEmpty) {
+      ops.add(<String, Object>{'insert': '$text\n'});
+    }
+    for (final String img in images) {
+      ops.add(<String, Object>{
+        'insert': <String, Object>{'image': img},
+      });
+      ops.add(<String, Object>{'insert': '\n'});
+    }
+    return jsonEncode(ops);
+  }
+
+  String _plain(String title, String body, int imageCount) {
+    final String head = body.trim();
+    final String t = title.trim();
+    final String base = t.isEmpty ? head : (head.isEmpty ? t : '$t\n\n$head');
+    if (imageCount == 0) return base;
+    return '$base\n\n[图片 ×$imageCount]';
+  }
+
+  // ── 导入 ─────────────────────────────────────────────────
 
   Future<void> _importEntries(List<NutstoreEntry> targets) async {
     if (targets.isEmpty) {
@@ -135,6 +192,7 @@ class _NutstoreImportPageState extends State<NutstoreImportPage> {
 
     int ok = 0;
     int skipped = 0;
+    int imageCount = 0;
     final List<String> failed = <String>[];
 
     for (final NutstoreEntry e in targets) {
@@ -144,14 +202,33 @@ class _NutstoreImportPageState extends State<NutstoreImportPage> {
       }
       try {
         final String text = await service.download(e);
-        if (text.trim().isEmpty) {
+        final String title = e.resolvedLabel;
+
+        // 下载该笔记引用的图片
+        final List<String> localImages = <String>[];
+        for (final String img in e.images) {
+          final String? url = _assets[img];
+          if (url == null) continue;
+          try {
+            final List<int>? bytes = await service.downloadBytes(url);
+            if (bytes == null || bytes.isEmpty) continue;
+            localImages.add(await _saveImage(img, bytes));
+            imageCount++;
+          } catch (_) {
+            // 单张图片失败不影响其余内容。
+          }
+        }
+
+        if (text.trim().isEmpty && localImages.isEmpty) {
           skipped++;
           continue;
         }
+
         final String when = (e.modified ?? DateTime.now()).toIso8601String();
         await db.addQuote(
           Quote(
-            content: _compose(e.label, text),
+            content: _plain(title, text, localImages.length),
+            deltaContent: _buildDelta(title, text, localImages),
             date: when,
             source: '坚果云/${e.display}',
             lastModified: when,
@@ -160,7 +237,10 @@ class _NutstoreImportPageState extends State<NutstoreImportPage> {
         doneSet.add(e.url);
         ok++;
         if (mounted) {
-          setState(() => _status = '已导入 $ok 个…（${e.label}）');
+          setState(
+            () => _status =
+                '已导入 $ok 个（图片 $imageCount 张）…（$title）',
+          );
         }
       } catch (err) {
         failed.add('${e.display}: $err');
@@ -171,7 +251,8 @@ class _NutstoreImportPageState extends State<NutstoreImportPage> {
     if (!mounted) return;
     setState(() {
       _busy = false;
-      _status = '导入完成：新增 $ok，跳过 $skipped，失败 ${failed.length}。'
+      _status = '导入完成：新增 $ok，跳过 $skipped，图片 $imageCount 张，'
+          '失败 ${failed.length}。'
           '${failed.isEmpty ? '' : '\n失败示例：${failed.first}'}';
     });
   }
@@ -194,121 +275,115 @@ class _NutstoreImportPageState extends State<NutstoreImportPage> {
       groups.putIfAbsent(e.group, () => <NutstoreEntry>[]).add(e);
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('坚果云文档导入')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+    return ListView(
+      shrinkWrap: widget.embedded,
+      physics: widget.embedded
+          ? const NeverScrollableScrollPhysics()
+          : const AlwaysScrollableScrollPhysics(),
+      padding: widget.embedded
+          ? const EdgeInsets.only(top: 4, bottom: 8)
+          : const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      children: <Widget>[
+        TextField(
+          controller: _server,
+          decoration: const InputDecoration(
+            labelText: '服务器地址',
+            hintText: 'https://dav.jianguoyun.com/dav/',
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _user,
+          decoration: const InputDecoration(labelText: '坚果云账号（邮箱）'),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _pass,
+          obscureText: true,
+          decoration: const InputDecoration(
+            labelText: '应用密码',
+            helperText: '坚果云 → 账户信息 → 安全选项 → 添加应用密码',
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
           children: <Widget>[
-            TextField(
-              controller: _server,
-              decoration: const InputDecoration(
-                labelText: '服务器地址',
-                hintText: 'https://dav.jianguoyun.com/dav/',
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : _scan,
+                icon: const Icon(Icons.search),
+                label: const Text('扫描目录'),
               ),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _user,
-              decoration: const InputDecoration(
-                labelText: '坚果云账号（邮箱）',
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: _busy ? null : () => _importEntries(_entries),
+                icon: const Icon(Icons.download),
+                label: const Text('全部导入'),
               ),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _pass,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: '应用密码',
-                helperText: '坚果云 → 账户信息 → 安全选项 → 添加应用密码',
-              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_busy) const LinearProgressIndicator(),
+        const SizedBox(height: 8),
+        Text(_status, style: theme.textTheme.bodyMedium),
+        if (_entries.isNotEmpty)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _busy ? null : _resetHistory,
+              icon: const Icon(Icons.restart_alt, size: 18),
+              label: const Text('清除导入记录'),
             ),
-            const SizedBox(height: 16),
-            Row(
+          ),
+        const Divider(height: 28),
+        Text(
+          '读取范围：坚果云/易码（顶层文档 + assets 图片）、'
+          '坚果云/hnote-data-v2（notes、蜜蜂便签 + res 图片），'
+          '图片会复制到本机并内嵌进便签。',
+          style: theme.textTheme.bodySmall,
+        ),
+        for (final MapEntry<String, List<NutstoreEntry>> g in groups.entries)
+          Padding(
+            padding: const EdgeInsets.only(top: 14),
+            child: Row(
               children: <Widget>[
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _busy ? null : _scan,
-                    icon: const Icon(Icons.search),
-                    label: const Text('扫描目录'),
+                  child: Text(
+                    '${g.key}（${g.value.length}）',
+                    style: theme.textTheme.titleSmall,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed:
-                        _busy ? null : () => _importEntries(_entries),
-                    icon: const Icon(Icons.download),
-                    label: const Text('全部导入'),
-                  ),
+                TextButton(
+                  onPressed: _busy ? null : () => _importEntries(g.value),
+                  child: const Text('导入本组'),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (_busy) const LinearProgressIndicator(),
-            const SizedBox(height: 8),
-            Text(_status, style: theme.textTheme.bodyMedium),
-            if (_entries.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 4),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: _busy ? null : _resetHistory,
-                  icon: const Icon(Icons.restart_alt, size: 18),
-                  label: const Text('清除导入记录'),
-                ),
-              ),
-            ],
-            const Divider(height: 28),
-            Text(
-              '读取范围：坚果云/易码（顶层文档）、'
-              '坚果云/hnote-data-v2（notes、蜜蜂便签）。',
-              style: theme.textTheme.bodySmall,
+          ),
+        for (final NutstoreEntry e in _entries)
+          ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              e.images.isEmpty ? Icons.description_outlined : Icons.image,
             ),
-            for (final MapEntry<String, List<NutstoreEntry>> g in groups.entries)
-              Padding(
-                padding: const EdgeInsets.only(top: 14),
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        '${g.key}（${g.value.length}）',
-                        style: theme.textTheme.titleSmall,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed:
-                          _busy ? null : () => _importEntries(g.value),
-                      child: const Text('导入本组'),
-                    ),
-                  ],
-                ),
-              ),
-            if (groups.isEmpty)
-              const SizedBox.shrink()
-            else
-              for (final NutstoreEntry e in _entries)
-                ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.description_outlined),
-                  title: Text(
-                    e.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(
-                    '${e.display} · ${e.size} 字节',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  onTap: _busy
-                      ? null
-                      : () => _importEntries(<NutstoreEntry>[e]),
-                ),
-          ],
-        ),
-      ),
+            title: Text(
+              e.resolvedLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              '${e.display} · ${e.size} 字节'
+              '${e.images.isEmpty ? '' : ' · 图片 ${e.images.length}'}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: _busy ? null : () => _importEntries(<NutstoreEntry>[e]),
+          ),
+      ],
     );
   }
 }

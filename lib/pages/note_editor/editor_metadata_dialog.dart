@@ -2,9 +2,57 @@ part of '../note_full_editor_page.dart';
 
 /// Metadata editing bottom sheet dialog.
 extension _NoteEditorMetadataDialog on _NoteFullEditorPageState {
+  /// 定制版：输入并返回一个新标签名称。
+  Future<String?> _promptNewTagName(BuildContext context) async {
+    final TextEditingController controller = TextEditingController();
+    final String? result = await showDialog<String>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('新建标签'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: '标签名称'),
+          onSubmitted: (String v) => Navigator.of(ctx).pop(v.trim()),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+            child: const Text('创建'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result == null) return null;
+    final String name = result.trim();
+    return name.isEmpty ? null : name;
+  }
+
   Future<void> _showMetadataDialog(BuildContext context) async {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    // 定制版：外层未传入标签时，主动从数据库加载，避免标签分组显示为空
+    if (_metaDialogTags.isEmpty) {
+      final List<NoteTag>? provided = widget.allTags;
+      if (provided != null && provided.isNotEmpty) {
+        _metaDialogTags = provided;
+      } else {
+        try {
+          _metaDialogTags = await context.read<DatabaseService>().getTags();
+        } catch (_) {
+          _metaDialogTags = <NoteTag>[];
+        }
+      }
+      _metaDialogTags = _metaDialogTags
+          .where((NoteTag t) => t.id != DatabaseService.hiddenTagId)
+          .toList();
+      if (!mounted) return;
+    }
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -300,7 +348,7 @@ extension _NoteEditorMetadataDialog on _NoteFullEditorPageState {
                                       builder: (context) {
                                         // 过滤标签
                                         final filteredTags =
-                                            (widget.allTags ?? []).where((tag) {
+                                            _metaDialogTags.where((tag) {
                                           return _metadataState
                                                   .tagSearchQuery.isEmpty ||
                                               tag
@@ -310,25 +358,25 @@ extension _NoteEditorMetadataDialog on _NoteFullEditorPageState {
                                                       .tagSearchQuery);
                                         }).toList();
 
-                                        if (filteredTags.isEmpty) {
-                                          return Center(
-                                            child: Padding(
-                                              padding: const EdgeInsets.all(
-                                                16.0,
-                                              ),
-                                              child: Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                ).noMatchingTags,
-                                              ),
-                                            ),
-                                          );
-                                        }
-
                                         return Wrap(
                                           spacing: 8.0,
                                           runSpacing: 8.0,
-                                          children: filteredTags.map((tag) {
+                                          children: <Widget>[
+                                            if (filteredTags.isEmpty)
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  vertical: 8,
+                                                ),
+                                                child: Text(
+                                                  '还没有标签，点右侧「新建标签」',
+                                                  style: TextStyle(
+                                                    color: theme.colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                                ),
+                                              ),
+                                            ...filteredTags.map((tag) {
                                             final selected = _metadataState
                                                 .selectedTagIds
                                                 .contains(tag.id);
@@ -353,7 +401,42 @@ extension _NoteEditorMetadataDialog on _NoteFullEditorPageState {
                                               checkmarkColor:
                                                   theme.colorScheme.primary,
                                             );
-                                          }).toList(),
+                                            }),
+                                            ActionChip(
+                                              avatar: const Icon(
+                                                Icons.add,
+                                                size: 18,
+                                              ),
+                                              label: const Text('新建标签'),
+                                              onPressed: () async {
+                                                final DatabaseService db =
+                                                    context
+                                                        .read<DatabaseService>();
+                                                final String? name =
+                                                    await _promptNewTagName(
+                                                  context,
+                                                );
+                                                if (name == null) return;
+                                                try {
+                                                  await db.addTag(name);
+                                                  _metaDialogTags =
+                                                      (await db.getTags())
+                                                          .where(
+                                                            (NoteTag t) =>
+                                                                t.id !=
+                                                                DatabaseService
+                                                                    .hiddenTagId,
+                                                          )
+                                                          .toList();
+                                                } catch (_) {
+                                                  return;
+                                                }
+                                                updateMetadataDialogState(
+                                                  () {},
+                                                );
+                                              },
+                                            ),
+                                          ],
                                         );
                                       },
                                     ),
@@ -390,7 +473,7 @@ extension _NoteEditorMetadataDialog on _NoteFullEditorPageState {
                                     children: _metadataState.selectedTagIds
                                         .map((tagId) {
                                       final tag =
-                                          (widget.allTags ?? []).firstWhere(
+                                          _metaDialogTags.firstWhere(
                                         (t) => t.id == tagId,
                                         orElse: () => NoteTag(
                                           id: tagId,

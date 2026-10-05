@@ -122,6 +122,20 @@ class _NoteFullEditorPageState extends State<NoteFullEditorPage> {
     return DeltaContentSerializer.encode(data);
   }
 
+  /// 定制版：编辑元数据弹窗中可用的标签缓存。
+  List<NoteTag> _metaDialogTags = <NoteTag>[];
+
+  /// 定制版：请求正文焦点（带一次延迟重试，避免异步载入后失焦）
+  void _focusEditorBody() {
+    if (!mounted) return;
+    _editorState.focusNode.requestFocus();
+    Future<void>.delayed(const Duration(milliseconds: 450), () {
+      if (!mounted) return;
+      if (_editorState.focusNode.hasFocus) return;
+      _editorState.focusNode.requestFocus();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -148,6 +162,11 @@ class _NoteFullEditorPageState extends State<NoteFullEditorPage> {
         _fetchFullQuote();
       });
     }
+
+    // 定制版：进入编辑器后立即聚焦正文，可直接开始输入
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusEditorBody();
+    });
 
     // 先初始化为基本控制器，避免阻塞UI
     _attachDraftListener();
