@@ -358,10 +358,33 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
     List<Quote> quotes = const <Quote>[];
     List<NoteTag> tags = const <NoteTag>[];
     try {
-      quotes = await db.getUserQuotes(
-        categoryId: widget.categoryId,
+      final String? cid = widget.categoryId;
+      // 定制版：分类和标签共用 categories 表，但查询走两条不同路径
+      // （quotes.category_id 单值 / quote_tags 多对多关联）。两条都查再合并，
+      // 用户不管从哪条路径分好的组，在这里都能看到。
+      final Map<String, Quote> merged = <String, Quote>{};
+      final List<Quote> byCategory = await db.getUserQuotes(
+        categoryId: cid,
         limit: 500,
       );
+      for (final Quote q in byCategory) {
+        final String? id = q.id;
+        if (id != null) merged[id] = q;
+      }
+      if (cid != null && cid.isNotEmpty) {
+        final List<Quote> byTag = await db.getUserQuotes(
+          tagIds: <String>[cid],
+          limit: 500,
+        );
+        for (final Quote q in byTag) {
+          final String? id = q.id;
+          if (id != null) merged.putIfAbsent(id, () => q);
+        }
+      }
+      quotes = merged.values.toList()
+        ..sort(
+          (Quote a, Quote b) => (b.date ?? '').compareTo(a.date ?? ''),
+        );
     } catch (_) {
       quotes = const <Quote>[];
     }
@@ -450,14 +473,26 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
     final DatabaseService db = context.read<DatabaseService>();
     final String now = DateTime.now().toIso8601String();
     int ok = 0;
+    int failed = 0;
     for (final Quote q in targets) {
       try {
-        await db.updateQuote(
-          q.copyWith(tagIds: <String>[tag.id], lastModified: now),
+        // 分类页走 quotes.category_id，标签走 quote_tags，二者都要写，
+        // 否则"移动"在分类里看不到。
+        final QuoteUpdateResult result = await db.updateQuote(
+          q.copyWith(
+            tagIds: <String>[tag.id],
+            categoryId: tag.id,
+            lastModified: now,
+          ),
         );
-        ok++;
+        if (result == QuoteUpdateResult.updated) {
+          ok++;
+        } else {
+          failed++;
+        }
       } catch (_) {
         // 单条失败不阻塞其余。
+        failed++;
       }
     }
     if (!mounted) return;
@@ -468,7 +503,11 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
     await _load();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已移动 $ok 条至「${tag.name}」')),
+      SnackBar(
+        content: Text(
+          '已移动 $ok 条至「${tag.name}」${failed > 0 ? '，失败 $failed 条' : ''}',
+        ),
+      ),
     );
   }
 

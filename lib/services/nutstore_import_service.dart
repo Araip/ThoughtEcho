@@ -241,7 +241,11 @@ class NutstoreImportService {
                 await _list(dio, e.url, '${spec.name}/$assetDir');
             for (final NutstoreEntry f in files) {
               if (!f.isDir && looksImage(f.name)) {
+                // 同时按「纯文件名」和「相对路径」建索引：
+                // hnote 的 meta.json 里存的是 res/xxx.jpg 这种相对路径，
+                // 只按文件名建键会导致图片永远匹配不上。
                 assets.putIfAbsent(f.name, () => f.url);
+                assets.putIfAbsent('$assetDir/${f.name}', () => f.url);
               }
             }
           } catch (_) {

@@ -1377,14 +1377,21 @@ class _QuoteItemWidgetState extends State<QuoteItemWidget>
 
     try {
       final DatabaseService db = context.read<DatabaseService>();
-      await db.updateQuote(
+      // 分类页按 quotes.category_id 过滤，标签关联写的是 quote_tags，
+      // 两者必须同时更新，否则"移动"了却在分类里看不到。
+      final QuoteUpdateResult result = await db.updateQuote(
         widget.quote.copyWith(
           tagIds: <String>[tag.id],
+          categoryId: tag.id,
           lastModified: DateTime.now().toIso8601String(),
         ),
       );
       if (!mounted) return;
-      AppSnackBar.success(context, '已移动至「${tag.name}」');
+      if (result == QuoteUpdateResult.updated) {
+        AppSnackBar.success(context, '已移动至「${tag.name}」');
+      } else {
+        AppSnackBar.error(context, '移动失败（${result.name}），请重试');
+      }
     } catch (e) {
       if (!mounted) return;
       AppSnackBar.error(context, '移动失败：$e');

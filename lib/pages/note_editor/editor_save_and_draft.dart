@@ -2,6 +2,18 @@ part of '../note_full_editor_page.dart';
 
 /// Draft management, save logic, and state helper methods.
 extension _NoteEditorSaveAndDraft on _NoteFullEditorPageState {
+  /// 定制版：分类与标签共用 categories 表，但分类页是按 quotes.category_id
+  /// 这个单值字段查询的。用户在编辑页选的标签必须同时落到 category_id，
+  /// 否则「分好组」的便签在分类里根本看不到。
+  String? _resolveCategoryIdForSave(Quote? base) {
+    for (final String tagId in _metadataState.selectedTagIds) {
+      if (tagId.isNotEmpty && tagId != DatabaseService.hiddenTagId) {
+        return tagId;
+      }
+    }
+    return base?.categoryId;
+  }
+
   void _initializeAsPlainText([String? text]) {
     try {
       if (mounted) {
@@ -344,7 +356,7 @@ extension _NoteEditorSaveAndDraft on _NoteFullEditorPageState {
       sentiment: baseQuote?.sentiment,
       keywords: baseQuote?.keywords,
       summary: baseQuote?.summary,
-      categoryId: baseQuote?.categoryId,
+      categoryId: _resolveCategoryIdForSave(baseQuote),
       colorHex: _metadataState.selectedColorHex,
       location: _metadataState.showLocation
           ? (_metadataState.location ??

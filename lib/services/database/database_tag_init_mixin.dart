@@ -258,7 +258,9 @@ mixin _DatabaseTagInitMixin on _DatabaseServiceBase {
       if (kIsWeb) {
         final before = _tagStore.length;
         _tagStore.removeWhere(
-          (c) => _DatabaseServiceBase.systemTagIds.contains(c.id),
+          (c) =>
+              _DatabaseServiceBase.systemTagIds.contains(c.id) &&
+              c.id != _DatabaseServiceBase.hiddenTagId,
         );
         if (before != _tagStore.length && !_tagsController.isClosed) {
           _tagsController.add(List.unmodifiable(_tagStore));
@@ -268,7 +270,11 @@ mixin _DatabaseTagInitMixin on _DatabaseServiceBase {
 
       if (_DatabaseServiceBase._database == null) return;
       final db = database;
-      final ids = _DatabaseServiceBase.systemTagIds.toList();
+      // 注意：hiddenTagId 也在 systemTagIds 里，但它不是「内置标签」，
+      // 而是隐藏功能的载体，误删会让隐藏便签失去归属，必须排除。
+      final ids = _DatabaseServiceBase.systemTagIds
+          .where((String id) => id != _DatabaseServiceBase.hiddenTagId)
+          .toList();
       if (ids.isEmpty) return;
       final holders = List<String>.filled(ids.length, '?').join(',');
       await db.delete('quote_tags', where: 'tag_id IN ($holders)', whereArgs: ids);
