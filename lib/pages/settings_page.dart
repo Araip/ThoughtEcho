@@ -33,6 +33,7 @@ import '../widgets/anniversary_notebook_icon.dart';
 import '../utils/anniversary_banner_text_utils.dart';
 import '../utils/anniversary_display_utils.dart';
 import 'webdav_sync_page.dart';
+import 'nutstore_import_page.dart';
 import '../services/webdav_sync_service.dart';
 import '../utils/aptabase_helper.dart';
 import '../utils/lww_utils.dart';
@@ -483,6 +484,23 @@ class SettingsPageState extends State<SettingsPage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const WebDAVSyncPage(),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.cloud_download_outlined),
+                  title: const Text('坚果云文档导入'),
+                  subtitle: const Text(
+                    '读取 坚果云/易码 与 坚果云/hnote-data-v2 的明文文档',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const NutstoreImportPage(),
                       ),
                     );
                   },
