@@ -58,6 +58,7 @@ import 'providers/app_providers.dart';
 import 'pages/home_page.dart';
 import 'pages/onboarding_page.dart';
 import 'pages/backup_restore_page.dart';
+import 'pages/app_lock_gate.dart';
 import 'widgets/quote_content_widget.dart'; // 用于缓存管理
 import 'widgets/app_snackbar.dart';
 
@@ -257,17 +258,8 @@ Future<void> main() async {
           settingsService.appSettings.developerMode,
         );
 
-        final aiAnalysisDbService = AIAnalysisDatabaseService();
         final connectivityService = ConnectivityService();
         final featureGuideService = FeatureGuideService(SafeMMKV());
-        final chatSessionService = ChatSessionService();
-
-        // 创建智能推送服务实例
-        final smartPushService = SmartPushService(
-          databaseService: databaseService,
-          locationService: locationService,
-          mmkvService: mmkvService,
-        );
 
         // 不再这里强制设置级别，让UnifiedLogService从用户配置中加载
 
@@ -289,11 +281,8 @@ Future<void> main() async {
               clipboardService: clipboardService,
               unifiedLogService: unifiedLogService,
               appTheme: appTheme,
-              aiAnalysisDbService: aiAnalysisDbService,
               connectivityService: connectivityService,
               featureGuideService: featureGuideService,
-              smartPushService: smartPushService,
-              chatSessionService: chatSessionService,
               mmkvService: mmkvService,
               servicesInitialized: servicesInitialized,
             ),
@@ -325,19 +314,6 @@ Future<void> main() async {
             // weatherService 不需要 localeCode（天气 API 通过 l10n 本地化）
             await locationService.init();
             logDebug('位置服务预初始化完成');
-
-            // 初始化智能推送服务
-            logDebug('开始初始化智能推送服务...');
-            await smartPushService.initialize();
-            logDebug('智能推送服务初始化完成');
-
-            // SOTA: 记录 App 打开时间（用于响应性热图分析）
-            try {
-              await smartPushService.analytics.recordAppOpen();
-              logDebug('SOTA: 已记录 App 打开时间');
-            } catch (e) {
-              logDebug('SOTA: 记录 App 打开时间失败: $e');
-            }
           } catch (e) {
             logDebug('预初始化服务失败: $e');
           }
@@ -420,19 +396,6 @@ Future<void> main() async {
                     throw TimeoutException('数据库初始化超时');
                   },
                 );
-                // 初始化AI分析数据库
-                try {
-                  await aiAnalysisDbService.init();
-                  logInfo('AI分析数据库初始化完成', source: 'BackgroundInit');
-                } catch (aiDbError) {
-                  logError(
-                    'AI分析数据库初始化失败: $aiDbError',
-                    error: aiDbError,
-                    source: 'BackgroundInit',
-                  );
-                  // AI分析数据库初始化失败不影响主要功能，继续执行
-                }
-
                 // 标记数据库迁移已完成
                 await settingsService.setDatabaseMigrationComplete(true);
 
@@ -448,18 +411,6 @@ Future<void> main() async {
                 // 在紧急情况下尝试初始化新数据库
                 try {
                   await databaseService.initializeNewDatabase();
-
-                  // 尝试初始化AI分析数据库
-                  try {
-                    await aiAnalysisDbService.init();
-                    logInfo('紧急恢复：AI分析数据库初始化完成', source: 'BackgroundInit');
-                  } catch (aiDbError) {
-                    logError(
-                      '紧急恢复：AI分析数据库初始化失败: $aiDbError',
-                      error: aiDbError,
-                      source: 'BackgroundInit',
-                    );
-                  }
 
                   await settingsService.setDatabaseMigrationComplete(true);
                   logInfo('后台初始化新数据库成功', source: 'BackgroundInit');
@@ -485,18 +436,6 @@ Future<void> main() async {
               // 引导已完成且数据库已迁移，正常初始化
               logInfo('数据库已迁移，执行常规初始化', source: 'BackgroundInit');
 
-              // 初始化AI分析数据库
-              try {
-                await aiAnalysisDbService.init();
-                logInfo('AI分析数据库初始化完成', source: 'BackgroundInit');
-              } catch (aiDbError) {
-                logError(
-                  'AI分析数据库初始化失败: $aiDbError',
-                  error: aiDbError,
-                  source: 'BackgroundInit',
-                );
-                // AI分析数据库初始化失败不影响主要功能，继续执行
-              }
               try {
                 await _initializeDatabaseNormally(
                   databaseService,
@@ -794,8 +733,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   ? const OnboardingPage() // 使用新的引导页面
                   : widget.isEmergencyMode
                       ? const EmergencyRecoveryPage()
-                      : HomePage(
-                          initialPage: defaultStartPage,
+                      : AppLockGate(
+                          child: HomePage(
+                            initialPage: defaultStartPage,
+                          ),
                         ),
           localizationsDelegates: const [
             AppLocalizations.delegate,

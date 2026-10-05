@@ -2,11 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import '../utils/ai_endpoint_security.dart';
 import '../utils/http_response.dart';
-import '../models/ai_settings.dart';
-import '../models/ai_provider_settings.dart';
-import '../models/multi_ai_settings.dart';
 import '../utils/app_logger.dart';
 import '../utils/sentry_network_tracing.dart';
 
@@ -23,25 +19,19 @@ class NetworkService {
 
   // 不同用途的Dio实例
   late final Dio _generalDio; // 通用HTTP请求
-  late final Dio _aiDio; // AI服务请求
 
   bool _initialized = false;
 
   @visibleForTesting
   Dio get generalDioForTesting => _generalDio;
 
-  @visibleForTesting
-  Dio get aiDioForTesting => _aiDio;
-
   /// 初始化网络服务
   Future<void> init() async {
     if (_initialized) return;
 
     _generalDio = Dio();
-    _aiDio = Dio();
 
     _configureGeneralDio();
-    _configureAIDio();
 
     _initialized = true;
     logDebug('NetworkService 初始化完成');
@@ -76,27 +66,6 @@ class NetworkService {
       ),
     );
     SentryNetworkTracing.addToGeneralDioIfEnabled(_generalDio);
-  }
-
-  /// 配置AI专用Dio实例
-  void _configureAIDio() {
-    _aiDio.options.connectTimeout = const Duration(seconds: 30);
-    _aiDio.options.receiveTimeout = const Duration(seconds: 300);
-    _aiDio.options.sendTimeout = const Duration(seconds: 60);
-
-    // AI请求的日志拦截器
-    if (kDebugMode) {
-      _aiDio.interceptors.add(
-        LogInterceptor(
-          requestBody: true,
-          responseBody: false, // AI响应可能很长，不打印
-          requestHeader: false, // 避免泄露API密钥
-          responseHeader: false,
-          error: true,
-          logPrint: (obj) => logDebug('[AI] $obj'),
-        ),
-      );
-    }
   }
 
   /// 通用HTTP GET请求
@@ -177,105 +146,6 @@ class NetworkService {
     }
   }
 
-  /// AI请求（普通）
-  Future<Response> aiRequest({
-    required String url,
-    required Map<String, dynamic> data,
-    AISettings? legacySettings,
-    AIProviderSettings? provider,
-    MultiAISettings? multiSettings,
-    Duration? timeout,
-  }) async {
-    _ensureInitialized();
-
-    try {
-      // 判据见 [isSecureAiEndpoint]：公网必须 https，环回/私有网段的明文放行。
-      // 一刀切 https-only 会把本地模型（Ollama / LM Studio，只监听
-      // `http://127.0.0.1:<port>`）整个功能判死。
-      final uri = Uri.parse(url);
-      if (!isSecureAiEndpoint(uri)) {
-        throw Exception('非安全URL: 公网请求必须使用 HTTPS');
-      }
-
-      final headers = _buildAIHeaders(provider, legacySettings);
-      final adjustedData = _adjustAIData(data, provider, legacySettings);
-
-      final response = await _aiDio.post(
-        url,
-        data: adjustedData,
-        options: Options(
-          headers: headers,
-          responseType: ResponseType.json,
-          receiveTimeout: timeout ?? const Duration(seconds: 300),
-        ),
-      );
-
-      return response;
-    } catch (e, stack) {
-      AppLogger.e(
-        'AI请求失败',
-        error: e,
-        stackTrace: stack,
-        source: 'NetworkService',
-      );
-      rethrow;
-    }
-  }
-
-  /// AI流式请求
-  Future<void> aiStreamRequest({
-    required String url,
-    required Map<String, dynamic> data,
-    required Function(String) onData,
-    required Function(String) onComplete,
-    required Function(Exception) onError,
-    AISettings? legacySettings,
-    AIProviderSettings? provider,
-    MultiAISettings? multiSettings,
-    Duration? timeout,
-  }) async {
-    _ensureInitialized();
-
-    try {
-      // 判据见 [isSecureAiEndpoint]：公网必须 https，环回/私有网段的明文放行。
-      // 一刀切 https-only 会把本地模型（Ollama / LM Studio，只监听
-      // `http://127.0.0.1:<port>`）整个功能判死。
-      final uri = Uri.parse(url);
-      if (!isSecureAiEndpoint(uri)) {
-        throw Exception('非安全URL: 公网请求必须使用 HTTPS');
-      }
-
-      final headers = _buildAIHeaders(provider, legacySettings);
-      final adjustedData = _adjustAIData(data, provider, legacySettings);
-      adjustedData['stream'] = true; // 确保是流式请求
-
-      final response = await _aiDio.post(
-        url,
-        data: adjustedData,
-        options: Options(
-          headers: headers,
-          responseType: ResponseType.stream,
-          receiveTimeout: timeout ?? const Duration(seconds: 300),
-        ),
-      );
-
-      await _processAIStreamResponse(
-        response.data.stream,
-        onData,
-        onComplete,
-        onError,
-      );
-    } catch (e, stack) {
-      AppLogger.e(
-        'AI流式请求失败',
-        error: e,
-        stackTrace: stack,
-        source: 'NetworkService',
-      );
-      onError(Exception('AI流式请求失败: $e'));
-    }
-  }
-
   /// 确保服务已初始化
   void _ensureInitialized() {
     if (!_initialized) {
@@ -315,156 +185,9 @@ class NetworkService {
     );
   }
 
-  @visibleForTesting
-  Map<String, String> buildAIHeadersForTesting(
-    AIProviderSettings? provider,
-    AISettings? legacySettings,
-  ) =>
-      _buildAIHeaders(provider, legacySettings);
-
-  /// 构建AI请求头
-  Map<String, String> _buildAIHeaders(
-    AIProviderSettings? provider,
-    AISettings? legacySettings,
-  ) {
-    final headers = <String, String>{'Content-Type': 'application/json'};
-
-    if (provider != null) {
-      // 使用新版服务商配置
-      if (provider.isAnthropicMessagesApi ||
-          provider.apiUrl.contains('anthropic.com')) {
-        headers['anthropic-version'] = '2023-06-01';
-        headers['x-api-key'] = provider.apiKey;
-      } else if (provider.apiUrl.contains('openrouter.ai')) {
-        headers['Authorization'] = 'Bearer ${provider.apiKey}';
-        headers['HTTP-Referer'] = 'https://thoughtecho.app';
-        headers['X-Title'] = 'ThoughtEcho App';
-      } else {
-        headers['Authorization'] = 'Bearer ${provider.apiKey}';
-      }
-    } else if (legacySettings != null) {
-      // 使用旧版配置
-      headers['Authorization'] = 'Bearer ${legacySettings.apiKey}';
-    }
-
-    return headers;
-  }
-
-  /// 调整AI请求数据
-  Map<String, dynamic> _adjustAIData(
-    Map<String, dynamic> data,
-    AIProviderSettings? provider,
-    AISettings? legacySettings,
-  ) {
-    final adjustedData = Map<String, dynamic>.from(data);
-
-    // 确保stream参数是boolean类型
-    if (adjustedData.containsKey('stream')) {
-      final streamValue = adjustedData['stream'];
-      if (streamValue is String) {
-        adjustedData['stream'] = streamValue.toLowerCase() == 'true';
-      } else if (streamValue is! bool) {
-        adjustedData['stream'] = true;
-      }
-    }
-
-    // 根据服务商调整数据
-    if (provider != null) {
-      adjustedData['model'] = adjustedData['model'] ?? provider.model;
-      adjustedData['temperature'] =
-          adjustedData['temperature'] ?? provider.temperature;
-      adjustedData['max_tokens'] =
-          adjustedData['max_tokens'] ?? provider.maxTokens;
-    } else if (legacySettings != null) {
-      adjustedData['model'] = adjustedData['model'] ?? legacySettings.model;
-      adjustedData['temperature'] =
-          adjustedData['temperature'] ?? legacySettings.temperature;
-      adjustedData['max_tokens'] =
-          adjustedData['max_tokens'] ?? legacySettings.maxTokens;
-    }
-
-    return adjustedData;
-  }
-
-  /// 处理AI流式响应
-  Future<void> _processAIStreamResponse(
-    Stream<List<int>> stream,
-    Function(String) onData,
-    Function(String) onComplete,
-    Function(Exception) onError,
-  ) async {
-    final buffer = StringBuffer();
-    String partialLine = '';
-
-    try {
-      await for (final data in stream) {
-        final chunk = String.fromCharCodes(data);
-        final text = partialLine + chunk;
-
-        // 使用 indexOf 和 substring 手动解析代替 split 以降低频繁创建 String 对象的内存与 GC 压力
-        int startIndex = 0;
-        int newlineIndex;
-
-        while ((newlineIndex = text.indexOf('\n', startIndex)) != -1) {
-          final line = text.substring(startIndex, newlineIndex);
-          startIndex = newlineIndex + 1;
-
-          if (line.startsWith('data:')) {
-            final jsonStr = line.substring(5).trim();
-            if (jsonStr == '[DONE]') {
-              onComplete(buffer.toString());
-              return;
-            }
-
-            try {
-              final json = jsonDecode(jsonStr);
-
-              // 处理OpenAI格式
-              final content = json['choices']?[0]?['delta']?['content'];
-              if (content != null && content is String && content.isNotEmpty) {
-                buffer.write(content);
-                onData(content);
-                continue;
-              }
-
-              // 处理Anthropic格式
-              final anthropicContent = json['delta']?['text'];
-              if (anthropicContent != null &&
-                  anthropicContent is String &&
-                  anthropicContent.isNotEmpty) {
-                buffer.write(anthropicContent);
-                onData(anthropicContent);
-                continue;
-              }
-            } catch (e, stack) {
-              AppLogger.e(
-                '解析流式响应JSON错误',
-                error: e,
-                stackTrace: stack,
-                source: 'NetworkService',
-              );
-            }
-          }
-        }
-        partialLine = text.substring(startIndex);
-      }
-
-      onComplete(buffer.toString());
-    } catch (e, stack) {
-      AppLogger.e(
-        '流式响应处理错误',
-        error: e,
-        stackTrace: stack,
-        source: 'NetworkService',
-      );
-      onError(Exception('流式响应处理错误: $e'));
-    }
-  }
-
   /// 清理资源
   void dispose() {
     _generalDio.close();
-    _aiDio.close();
     _initialized = false;
     logDebug('NetworkService 已清理');
   }

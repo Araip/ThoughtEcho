@@ -9,7 +9,6 @@ import '../services/clipboard_service.dart';
 import '../services/database_service.dart';
 import '../services/settings_service.dart';
 import '../utils/icon_utils.dart';
-import 'ai_settings_page.dart';
 import 'calculator_disguise_page.dart';
 import '../theme/theme_style.dart';
 
@@ -390,30 +389,6 @@ class _PreferencesDetailPageState extends State<PreferencesDetailPage> {
                       settings.setAICardGenerationEnabled(v),
                 ),
                 _buildDivider(),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.auto_awesome,
-                      color: theme.colorScheme.onSecondaryContainer,
-                      size: 20,
-                    ),
-                  ),
-                  title: Text(l10n.moreAiSettings),
-                  subtitle: Text(l10n.moreAiSettingsDesc),
-                  trailing: Icon(
-                    Icons.chevron_right,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AISettingsPage()),
-                  ),
-                ),
               ],
             ),
 

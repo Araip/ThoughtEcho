@@ -21,15 +21,12 @@ import 'package:flutter/services.dart';
 import '../utils/app_logger.dart';
 import '../utils/aptabase_helper.dart';
 import '../utils/string_utils.dart';
-import 'thoughter_page.dart';
-import '../models/thoughter_entry.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, compute;
 
 import '../extensions/note_tag_localization_extension.dart';
 import '../utils/delta_content_serializer.dart';
 import '../utils/device_memory_manager.dart';
 import '../widgets/quill_enhanced_toolbar_unified.dart';
-import '../widgets/ai_options_menu.dart';
 import '../utils/quill_editor_extensions.dart'; // 导入自定义embedBuilders
 import '../services/temporary_media_service.dart';
 import '../widgets/media_player_widget.dart';
@@ -37,7 +34,6 @@ import '../constants/app_constants.dart';
 import '../services/media_file_service.dart';
 import '../services/media_reference_service.dart';
 import '../services/draft_service.dart'; // 导入草稿服务
-import '../utils/feature_guide_helper.dart';
 import '../utils/location_weather_helper.dart';
 import '../services/settings_service.dart';
 import '../controllers/note_editor_states.dart';
@@ -45,6 +41,7 @@ import '../widgets/app_snackbar.dart';
 import '../widgets/note_metadata_dialogs.dart';
 import '../theme/theme_style.dart';
 import 'nearby_location_picker.dart';
+import '../utils/feature_guide_helper.dart';
 
 part 'note_editor/editor_document_init.dart';
 part 'note_editor/editor_save_and_draft.dart';
@@ -55,8 +52,6 @@ part 'note_editor/editor_color_and_media.dart';
 part 'note_editor/editor_metadata_dialog.dart';
 part 'note_editor/editor_metadata_location_section.dart';
 part 'note_editor/editor_map_picker.dart';
-part 'note_editor/editor_metadata_ai_section.dart';
-part 'note_editor/editor_ai_features.dart';
 
 class NoteFullEditorPage extends StatefulWidget {
   final String initialContent;

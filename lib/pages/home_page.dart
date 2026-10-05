@@ -9,13 +9,11 @@ import '../controllers/home_page_controller.dart';
 import '../services/database_service.dart';
 import '../services/location_service.dart';
 import '../services/weather_service.dart';
-import '../services/ai_service.dart';
 import '../services/clipboard_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/excerpt_intent_service.dart';
 import '../controllers/search_controller.dart'; // 导入搜索控制器
 import '../models/quote_model.dart';
-import '../widgets/daily_quote_view.dart';
 import '../widgets/note_list_view.dart';
 import 'explore_page.dart';
 import 'release_notes_page.dart';
@@ -25,16 +23,13 @@ import 'category_home_page.dart';
 import '../services/settings_service.dart'; // Import SettingsService
 import '../utils/app_logger.dart';
 import '../utils/aptabase_helper.dart';
-import '../services/ai_card_generation_service.dart';
 import '../gen_l10n/app_localizations.dart';
 import '../services/draft_service.dart';
-import '../services/smart_push_service.dart';
 import '../widgets/anniversary_animation_overlay.dart';
 import '../utils/anniversary_display_utils.dart';
 import '../utils/draft_restore_utils.dart';
 import 'home/home_card_actions.dart';
 import 'home/home_capture_actions.dart';
-import 'home/daily_prompt_panel.dart';
 import 'home/home_guide_coordinator.dart';
 import 'home/home_note_editor_actions.dart';
 import 'home/home_note_mutation_actions.dart';
@@ -142,13 +137,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // 新增：NoteListView的全局Key
   final GlobalKey<NoteListViewState> _noteListViewKey =
       GlobalKey<NoteListViewState>();
-  final GlobalKey<DailyQuoteViewState> _dailyQuoteViewKey =
-      GlobalKey<DailyQuoteViewState>();
-
-  // 功能引导：每日一言的 Key
+  // 功能引导：记录页 Key（每日一言 / 每日提示模块已移除）
   final GlobalKey _dailyQuoteGuideKey = GlobalKey();
-  final GlobalKey<HomeDailyPromptPanelState> _dailyPromptPanelKey =
-      GlobalKey<HomeDailyPromptPanelState>();
 
   // 功能引导：记录页的 Keys
   final GlobalKey _noteFilterGuideKey = GlobalKey();
@@ -158,11 +148,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   final GlobalKey _settingsTabGuideKey = GlobalKey(); // 功能引导：设置标签 Key（用于回收站引导）
   final GlobalKey<SettingsPageState> _settingsPageKey =
       GlobalKey<SettingsPageState>();
-  // 通知定位：监听 SmartPushService.pendingTargetNoteId
-  SmartPushService? _smartPushService;
-
-  late HomeCardActions _cardActions;
-  late final HomeCaptureActions _captureActions;
   late final HomeGuideCoordinator _guideCoordinator;
   late final HomeRefreshCoordinator _refreshCoordinator;
   late final HomeTargetNavigation _targetNavigation;
@@ -197,16 +182,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     });
     _pageController = HomePageController(initialPage: widget.initialPage)
       ..addListener(_onPageStateChanged);
-    _cardActions = HomeCardActions(
-      context: context,
-      isMounted: () => mounted,
-      cardService: null,
-    );
-    _captureActions = HomeCaptureActions(
-      context: context,
-      isMounted: () => mounted,
-      onInsertText: (text) => _showAddQuoteDialog(prefilledContent: text),
-    );
     _guideCoordinator = HomeGuideCoordinator(
       context: context,
       isMounted: () => mounted,
@@ -224,12 +199,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       context: context,
       isMounted: () => mounted,
       refreshQuote: () async {
-        await _dailyQuoteViewKey.currentState?.refreshQuote();
       },
       refreshPrompt: ({bool initialLoad = false}) async {
-        await _dailyPromptPanelKey.currentState?.refreshPrompt(
-          initialLoad: initialLoad,
-        );
       },
     );
     _targetNavigation = HomeTargetNavigation(
@@ -265,17 +236,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     // 使用延迟方法来确保在UI构建完成后执行初始化
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // 注册 SmartPushService 通知定位监听（暖启动路径）
-      if (mounted) {
-        _smartPushService = Provider.of<SmartPushService>(
-          context,
-          listen: false,
-        );
-        _smartPushService!.addListener(_onSmartPushServiceChanged);
-        // 检查是否已有待处理的通知定位（可能在 initState 之前就到达了）
-        _onSmartPushServiceChanged();
-      }
-
       // 如果初始页面是记录页，优先加载标签数据
       if (widget.initialPage == 1) {
         // 记录页启动时，先加载标签（高优先级）
@@ -332,11 +292,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    final aiService = context.read<AIService>();
-    final settingsService = context.read<SettingsService>();
-    _cardActions.configure(
-      AICardGenerationService(aiService, settingsService),
-    );
   }
 
   @override
@@ -344,7 +299,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     // 移除生命周期观察器
     WidgetsBinding.instance.removeObserver(this);
     _connectivityService?.removeListener(_onConnectivityChanged);
-    _smartPushService?.removeListener(_onSmartPushServiceChanged);
     _guideCoordinator.dispose();
     _targetNavigation.dispose();
     _noteMutationActions.dispose();
@@ -357,15 +311,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _onPageStateChanged() {
     _trackTab(_pageController.currentIndex);
     if (mounted) setState(() {});
-  }
-
-  /// 响应 SmartPushService 的通知定位请求（暖启动路径，无页面重建）
-  void _onSmartPushServiceChanged() {
-    if (!mounted || _smartPushService == null) return;
-    final noteId = _smartPushService!.consumePendingTargetNoteId();
-    if (noteId == null || noteId.isEmpty) return;
-    logDebug('收到通知定位请求（原地导航）: $noteId', source: 'HomePage');
-    unawaited(_targetNavigation.acceptNotificationTarget(noteId));
   }
 
   /// 网络状态变化回调：恢复联网时自动刷新位置和天气
@@ -695,7 +640,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // FAB 长按由捕获模块处理语音与 OCR 的完整交互。
   void _onFABLongPress() {
     AptabaseHelper.trackEvent('feature_used', {'action': 'create_note'});
-    unawaited(_captureActions.startVoiceCapture());
   }
 
   void _showEditQuoteDialog(Quote quote) {
@@ -715,12 +659,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   void _showAIQuestionDialog(Quote quote) {
-    _noteEditorActions.askAi(quote);
   }
 
   // AI 卡片模块隐藏生成、预览、分享和保存的完整流程。
   void _generateAICard(Quote quote) {
-    unawaited(_cardActions.generateCard(quote));
   }
 
   // 处理排序变更

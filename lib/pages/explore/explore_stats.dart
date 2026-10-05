@@ -246,51 +246,6 @@ extension _ExploreStats on _ExplorePageState {
       AppLogger.d('Note without id cannot be located in the list');
       return;
     }
-    try {
-      context.read<SmartPushService>().requestNoteLocation(noteId);
-    } catch (e) {
-      // 服务未注册（测试/裁剪构建）时不该让点击崩掉页面
-      AppLogger.d('SmartPushService unavailable for note location: $e');
-    }
-  }
-
-  /// 每条笔记预览上的「问 Thoughter」。
-  ///
-  /// 和洞察下的「追问这条」同一个模式：带着具体的笔记进去，
-  /// 而不是让用户先打开助手再自己描述一遍要聊哪条。
-  Widget _buildAskThoughterButton(Quote quote, AppLocalizations l10n) {
-    final theme = Theme.of(context);
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(10),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          _openThoughterForNote(quote);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.auto_awesome,
-                size: 14,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                l10n.askNote,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   /// 构建笔记预览
@@ -435,7 +390,6 @@ extension _ExploreStats on _ExplorePageState {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    _buildAskThoughterButton(quote, l10n),
                   ],
                 ),
               ],

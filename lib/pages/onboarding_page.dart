@@ -10,12 +10,10 @@ import '../widgets/onboarding/appearance_page_view.dart';
 import '../widgets/onboarding/page_views.dart';
 import '../widgets/onboarding/preferences_page_view.dart';
 import '../utils/app_navigator_key.dart';
-import 'ai_settings_page.dart';
 import '../services/migration_service.dart';
 import '../services/database_service.dart';
 import '../services/settings_service.dart';
 import '../services/mmkv_service.dart';
-import '../services/ai_analysis_database_service.dart';
 import '../utils/app_logger.dart';
 import '../constants/app_constants.dart';
 import 'home_page.dart';
@@ -173,18 +171,6 @@ class _OnboardingPageState extends State<OnboardingPage>
         logInfo('更新迁移成功完成');
 
         // 初始化 AI 分析数据库
-        try {
-          final aiAnalysisDbService = context.read<AIAnalysisDatabaseService>();
-          await aiAnalysisDbService.init();
-          logInfo('AI分析数据库初始化完成', source: 'OnboardingPage');
-        } catch (aiDbError) {
-          logError(
-            'AI分析数据库初始化失败: $aiDbError',
-            error: aiDbError,
-            source: 'OnboardingPage',
-          );
-        }
-
         if (!mounted) return;
 
         // 标记服务初始化完成
@@ -467,9 +453,6 @@ class _OnboardingPageState extends State<OnboardingPage>
     await Future.delayed(const Duration(milliseconds: 400));
     final navigator = navigatorKey.currentState;
     if (navigator == null) return;
-    await navigator.push(
-      MaterialPageRoute<void>(builder: (_) => const AISettingsPage()),
-    );
   }
 
   /// 底部导航

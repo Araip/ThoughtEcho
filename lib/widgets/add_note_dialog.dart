@@ -12,10 +12,8 @@ import 'package:uuid/uuid.dart';
 
 import '../constants/app_constants.dart';
 import '../gen_l10n/app_localizations.dart';
-import '../models/thoughter_entry.dart';
 import '../models/note_tag.dart';
 import '../models/quote_model.dart';
-import '../pages/thoughter_page.dart';
 import '../pages/note_full_editor_page.dart'; // 导入全屏富文本编辑器
 import '../pages/nearby_location_picker.dart';
 import '../services/database_service.dart';
@@ -24,15 +22,14 @@ import '../services/local_geocoding_service.dart';
 import '../services/settings_service.dart';
 import '../services/weather_service.dart';
 import '../theme/theme_style.dart';
-import '../utils/feature_guide_helper.dart';
 import '../utils/string_utils.dart';
 import '../utils/time_utils.dart'; // 导入时间工具类
 import 'accessible_color_grid.dart'; // Import the new accessible color grid
-import 'add_note_ai_menu.dart'; // 导入 AI 菜单组件
 import '../controllers/add_note_controller.dart';
 import 'add_note_dialog_parts.dart'; // 导入拆分的组件
 import 'app_snackbar.dart';
 import 'note_metadata_dialogs.dart';
+import '../utils/feature_guide_helper.dart';
 
 // TODO(refactor): This file exceeds 2400 lines and contains redundant location/weather logic.
 // Consider extracting core business logic into a separate controller or service.
@@ -1983,16 +1980,6 @@ class _AddNoteDialogState extends State<AddNoteDialog>
       navigator.pop();
     }
 
-    if (noteForAgent == null) return;
-    await navigator.push(
-      MaterialPageRoute(
-        builder: (_) => ThoughterPage(
-          entrySource: ThoughterEntrySource.note,
-          quote: noteForAgent,
-          initialQuestion: initialQuestion,
-        ),
-      ),
-    );
   }
 
   /// 显示未保存内容的确认对话框
@@ -2711,11 +2698,6 @@ class _AddNoteDialogState extends State<AddNoteDialog>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      // AI助手按钮
-                      if (_deferredControlsVisible)
-                        AddNoteAIMenu(
-                          onOpenAiAssistant: _openAiAssistant,
-                        ),
                       const Spacer(),
                       FilledButton.tonal(
                         onPressed: () => unawaited(_handleCloseRequest()),

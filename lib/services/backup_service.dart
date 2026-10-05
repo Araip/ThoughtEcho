@@ -24,15 +24,12 @@ import 'package:meta/meta.dart';
 class BackupService {
   final DatabaseService _databaseService;
   final SettingsService _settingsService;
-  final AIAnalysisDatabaseService _aiAnalysisDbService;
 
   BackupService({
     required DatabaseService databaseService,
     required SettingsService settingsService,
-    required AIAnalysisDatabaseService aiAnalysisDbService,
   })  : _databaseService = databaseService,
-        _settingsService = settingsService,
-        _aiAnalysisDbService = aiAnalysisDbService;
+        _settingsService = settingsService;
 
   /// 最近一次导出中富文本媒体路径转换失败的笔记ID列表
   ///
@@ -377,30 +374,8 @@ class BackupService {
       final settingsData = _settingsService.getAllSettingsForBackup();
       sink.write('"settings":${jsonEncode(settingsData)},');
 
-      // 4. 流式导出AI分析数据（分页写入，避免全量加载到内存）
-      logDebug('正在流式导出AI分析数据...');
-      sink.write('"ai_analysis":[');
-      const int aiPageSize = 20;
-      int aiOffset = 0;
-      bool isFirstAnalysis = true;
-      while (true) {
-        cancelToken?.throwIfCancelled();
-        final page = await _aiAnalysisDbService.exportAnalysesPage(
-          aiOffset,
-          aiPageSize,
-        );
-        if (page.isEmpty) break;
-        for (final item in page) {
-          if (!isFirstAnalysis) sink.write(',');
-          isFirstAnalysis = false;
-          sink.write(jsonEncode(item));
-        }
-        await sink.flush();
-        aiOffset += page.length;
-        if (page.length < aiPageSize) break;
-        await Future.delayed(const Duration(milliseconds: 1));
-      }
-      sink.write(']}'); // 结束 ai_analysis 数组 + 顶层 JSON 对象
+      // 4. AI 分析数据模块已移除：仍写出空数组，保持备份 JSON 结构兼容
+      sink.write('"ai_analysis":[]}');
 
       await sink.flush();
       onProgress?.call(1.0);
@@ -586,10 +561,6 @@ class BackupService {
 
       cancelToken?.throwIfCancelled();
 
-      if (clearExisting) {
-        await _aiAnalysisDbService.deleteAllAnalyses();
-      }
-
       // 恢复设置（使用现有的方法）
       if (backupData.containsKey('settings')) {
         logDebug('恢复设置数据...');
@@ -600,19 +571,6 @@ class BackupService {
 
       cancelToken?.throwIfCancelled();
 
-      // 恢复AI分析数据（使用现有的方法）
-      if (backupData.containsKey('ai_analysis')) {
-        logDebug('恢复AI分析数据...');
-        final rawAiAnalysis = backupData['ai_analysis'];
-        if (rawAiAnalysis is List) {
-          await _aiAnalysisDbService.importAnalysesFromList(rawAiAnalysis);
-        } else if (rawAiAnalysis != null) {
-          logWarning(
-            '跳过非 List 格式的 AI 分析节点 (${rawAiAnalysis.runtimeType})',
-            source: 'BackupService',
-          );
-        }
-      }
 
       logDebug('导入数据处理完成');
       return cleanupStats;

@@ -175,9 +175,6 @@ class HomeGuideCoordinator {
     }
     // 智能推送排在这一页自己的引导之后：它是「去别处看看」的发现提示，
     // 优先级低于用户此刻正看着的这个列表怎么用。
-    if (await _shouldSuggestSmartPush()) {
-      guides.add(('smart_push_entry', settingsTabKey));
-    }
     // 上面那次判断要查数据库，回来时页面可能已经不在了。
     // `context.mounted` 要显式写出来，包在 `_active` 里分析器看不穿。
     if (!context.mounted || !_active || currentPage() != 1) return;
@@ -197,25 +194,6 @@ class HomeGuideCoordinator {
   /// 提示了反而像空头承诺——所以要等攒够 [_smartPushNoteThreshold] 条再提，
   /// 而且已经自己开过的人不再提。
   static const int _smartPushNoteThreshold = 5;
-
-  Future<bool> _shouldSuggestSmartPush() async {
-    if (!_active) return false;
-    if (FeatureGuideHelper.hasShown(context, 'smart_push_entry')) return false;
-
-    try {
-      final smartPush = Provider.of<SmartPushService>(context, listen: false);
-      final settings = smartPush.settings;
-      if (settings.enabled || settings.dailyQuotePushEnabled) return false;
-
-      final database = Provider.of<DatabaseService>(context, listen: false);
-      final count = await database.getQuotesCount();
-      return count >= _smartPushNoteThreshold;
-    } catch (e) {
-      // 拿不到服务或数不出来时就不提示——引导不值得为此打断用户或抛错。
-      debugPrint('判断智能推送引导条件失败: $e');
-      return false;
-    }
-  }
 
   void _scheduleSettingsGuide() {
     if (!_quota.isAvailable || _settingsPending) return;

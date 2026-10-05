@@ -7,7 +7,6 @@ import 'package:geolocator/geolocator.dart';
 import '../models/app_settings.dart';
 import '../services/settings_service.dart';
 import '../services/unified_log_service.dart';
-import 'ai_settings_page.dart';
 import 'hitokoto_settings_page.dart';
 import 'theme_settings_page.dart';
 import 'logs_settings_page.dart';
@@ -28,10 +27,7 @@ import 'preferences_detail_page.dart';
 import 'user_guide_page.dart';
 import 'feedback_contact_page.dart';
 import 'release_notes_page.dart';
-import '../utils/feature_guide_helper.dart';
 import 'storage_management_page.dart';
-import 'local_ai_settings_page.dart'; // 导入本地 AI 设置页面
-import 'smart_push_settings_page.dart'; // 导入智能推送设置页面
 import '../widgets/anniversary_animation_overlay.dart';
 import '../widgets/anniversary_badges.dart';
 import '../widgets/anniversary_notebook_icon.dart';
@@ -42,6 +38,7 @@ import '../services/webdav_sync_service.dart';
 import '../utils/aptabase_helper.dart';
 import '../utils/lww_utils.dart';
 import '../theme/theme_style.dart';
+import '../utils/feature_guide_helper.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -333,20 +330,6 @@ class SettingsPageState extends State<SettingsPage> {
                 // 智能推送
                 Builder(
                   builder: (context) {
-                    return ListTile(
-                      title: Text(l10n.smartPushTitle),
-                      subtitle: Text(l10n.smartPushDesc),
-                      leading: const Icon(Icons.notifications_active_outlined),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SmartPushSettingsPage(),
-                          ),
-                        );
-                      },
-                    );
                   },
                 ),
                 // 「每日一言」入口已移除（定制版）

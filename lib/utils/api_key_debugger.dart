@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import '../services/api_key_manager.dart';
 import '../services/settings_service.dart';
 import 'package:thoughtecho/utils/app_logger.dart';
+import '../services/api_key_manager.dart';
 
 /// API Key生命周期调试工具
 /// 帮助追踪API Key在保存、切换、读取、请求整个生命周期中的状态

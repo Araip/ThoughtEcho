@@ -13,7 +13,6 @@ import '../services/settings_service.dart';
 import '../services/clipboard_service.dart';
 import '../services/database_service.dart';
 import '../services/mmkv_service.dart';
-import '../services/ai_analysis_database_service.dart';
 import '../utils/app_logger.dart';
 
 /// 引导页面控制器
@@ -27,7 +26,6 @@ class OnboardingController extends ChangeNotifier {
   late final MigrationService _migrationService;
   late final SettingsService _settingsService;
   late final ClipboardService _clipboardService;
-  late final AIAnalysisDatabaseService _aiAnalysisDbService;
   late final DatabaseService _databaseService;
 
   OnboardingController({this.servicesInitializedNotifier});
@@ -42,11 +40,9 @@ class OnboardingController extends ChangeNotifier {
       final settingsService = context.read<SettingsService>();
       final mmkvService = context.read<MMKVService>();
       final clipboardService = context.read<ClipboardService>();
-      final aiAnalysisDbService = context.read<AIAnalysisDatabaseService>();
 
       _settingsService = settingsService;
       _clipboardService = clipboardService;
-      _aiAnalysisDbService = aiAnalysisDbService;
       _databaseService = databaseService;
       _migrationService = MigrationService(
         databaseService: databaseService,
@@ -193,7 +189,6 @@ class OnboardingController extends ChangeNotifier {
 
       // 5. 初始化 AI 分析数据库
       try {
-        await _aiAnalysisDbService.init();
         logInfo('AI分析数据库初始化完成', source: 'OnboardingController');
       } catch (aiDbError) {
         logError(
@@ -386,7 +381,6 @@ class OnboardingController extends ChangeNotifier {
 
       // 6. 初始化 AI 分析数据库
       try {
-        await _aiAnalysisDbService.init();
         logInfo('AI分析数据库初始化完成', source: 'OnboardingController');
       } catch (aiDbError) {
         logError(

@@ -136,18 +136,6 @@ class HomeNoteEditorActions {
     });
   }
 
-  void askAi(Quote quote) {
-    if (!_active) return;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (routeContext) => ThoughterPage(
-          quote: quote,
-          entrySource: ThoughterEntrySource.note,
-        ),
-      ),
-    );
-  }
-
   Future<void> _save(Quote quote, {required bool isEditing}) async {
     if (!_active) return;
     final database = context.read<DatabaseService>();

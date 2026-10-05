@@ -5,21 +5,13 @@ import 'package:collection/collection.dart';
 import 'package:provider/provider.dart';
 import '../models/quote_model.dart';
 import '../models/weather_data.dart';
-import '../models/thoughter_entry.dart';
-import '../models/chat_session.dart';
 import '../services/database_service.dart';
-import '../services/ai_service.dart';
 import '../services/settings_service.dart';
-import '../services/smart_push_service.dart';
-import '../services/chat_session_service.dart';
-import '../services/insight_history_service.dart';
 import '../services/location_service.dart';
 import '../services/weather_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/time_utils.dart';
 import '../utils/icon_utils.dart';
-import '../utils/ai_prompt_manager.dart';
-import '../utils/ai_request_helper.dart';
 import '../utils/report_period_labels.dart';
 import '../utils/report_period_utils.dart';
 import '../utils/string_utils.dart';
@@ -27,17 +19,11 @@ import '../constants/app_constants.dart'; // 导入应用常量
 import '../theme/app_semantic_colors.dart';
 import '../theme/theme_style.dart';
 import '../gen_l10n/app_localizations.dart';
-import '../widgets/ai/experimental_badge.dart';
-import 'map_memory_page.dart';
-import 'thoughter_page.dart';
-import 'thoughter/session_history_page.dart';
 
 part 'explore/explore_data_loading.dart';
 part 'explore/explore_time_selector.dart';
 part 'explore/explore_overview.dart';
 part 'explore/explore_stats.dart';
-part 'explore/explore_thoughter_entry.dart';
-part 'explore/explore_map_entry.dart';
 
 /// 探索页：底部导航第三个 tab，聚合周期洞察与 Thoughter 入口。
 class ExplorePage extends StatefulWidget {
@@ -79,9 +65,6 @@ class _ExplorePageState extends State<ExplorePage> {
 
   // 最近的 Thoughter 会话。探索页入口每次都开新会话（只有笔记入口会恢复），
   // 所以这里把最近几条列出来，让对话有连续性而不是每次白纸一张。
-  List<ChatSession> _recentSessions = const [];
-  Map<String, ChatSessionOverview> _recentSessionOverviews = const {};
-  static const int _recentSessionLimit = 2;
 
   // 流式洞察的节流缓冲：避免每个 chunk 都 setState 触发整页重排
   String _insightPending = '';
@@ -120,7 +103,6 @@ class _ExplorePageState extends State<ExplorePage> {
   void initState() {
     super.initState();
     _loadPeriodData();
-    _loadRecentSessions();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _databaseService = context.read<DatabaseService>();

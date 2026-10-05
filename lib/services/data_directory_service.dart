@@ -5,8 +5,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/app_logger.dart';
 import '../utils/path_security_utils.dart';
-import 'ai_analysis_database_service.dart';
-import 'chat_session_service.dart';
 import 'database_service.dart';
 import 'large_file_manager.dart';
 
@@ -190,23 +188,6 @@ class DataDirectoryService {
     } catch (e, stack) {
       logError('关闭 DatabaseService 失败', error: e, stackTrace: stack);
       failures.add('DatabaseService: $e');
-    }
-
-    try {
-      await AIAnalysisDatabaseService().closeDatabase();
-    } catch (e, stack) {
-      logError('关闭 AIAnalysisDatabaseService 失败', error: e, stackTrace: stack);
-      failures.add('AIAnalysisDatabaseService: $e');
-    }
-
-    try {
-      final activeInstance = ChatSessionService.activeInstance;
-      if (activeInstance != null) {
-        await activeInstance.close();
-      }
-    } catch (e, stack) {
-      logError('关闭 ChatSessionService 失败', error: e, stackTrace: stack);
-      failures.add('ChatSessionService: $e');
     }
 
     if (failures.isNotEmpty) {

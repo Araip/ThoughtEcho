@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/settings_service.dart';
+import 'nutstore_import_page.dart';
 
 /// 定制版：伪装计算器页
 ///
@@ -9,9 +10,12 @@ import '../services/settings_service.dart';
 /// 在计算器上输入解锁码 [unlockCode]（默认 `1234`）后按「=」，
 /// 才会弹出真实的隐私与安全设置面板。
 class CalculatorDisguisePage extends StatefulWidget {
-  const CalculatorDisguisePage({super.key});
+  const CalculatorDisguisePage({super.key, this.onUnlocked});
 
-  /// 解锁码：输入该数字后按「=」即可进入真实设置。
+  /// 解锁成功后的回调：由 AppLockGate 注入，用于切到便签主界面。
+  final VoidCallback? onUnlocked;
+
+  /// 解锁码：右上角长按输入该密码，或输入该数字后按「=」即可进入便签。
   static const String unlockCode = '1234';
 
   @override
@@ -104,7 +108,7 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
         _accumulator == null &&
         _display == CalculatorDisguisePage.unlockCode) {
       _clearAll();
-      _openPrivacyPanel();
+      _unlock();
       return;
     }
 
@@ -148,6 +152,69 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
     s = s.replaceFirst(RegExp(r'0+$'), '');
     s = s.replaceFirst(RegExp(r'\.$'), '');
     return s;
+  }
+
+  // ══════════════ 解锁流程 ══════════════
+
+  /// 右上角长按：弹密码框，输入正确密码后进入便签主界面。
+  Future<void> _promptPassword() async {
+    final TextEditingController ctrl = TextEditingController();
+    final bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          title: const Text('输入密码'),
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(hintText: '密码'),
+            onSubmitted: (_) => Navigator.of(ctx).pop(true),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('确定'),
+            ),
+          ],
+        );
+      },
+    );
+    final String input = ctrl.text;
+    ctrl.dispose();
+    if (ok != true) return;
+    if (input == CalculatorDisguisePage.unlockCode) {
+      _unlock();
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('密码错误')),
+      );
+    }
+  }
+
+  /// 通过校验后切到便签主界面。
+  void _unlock() {
+    final VoidCallback? cb = widget.onUnlocked;
+    if (cb != null) {
+      cb();
+    } else if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  /// 长按显示区域：进入坚果云文档导入页。
+  void _openNutstoreImport() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext _) => const NutstoreImportPage(),
+      ),
+    );
   }
 
   // ══════════════ 解锁后的真实隐私设置 ══════════════
@@ -211,28 +278,46 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: <Widget>[
-            Expanded(
-              child: Container(
-                alignment: Alignment.bottomRight,
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: SingleChildScrollView(
-                  reverse: true,
-                  child: Text(
-                    _display,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 72,
-                      fontWeight: FontWeight.w300,
+            Column(
+              children: <Widget>[
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onLongPress: _openNutstoreImport,
+                    child: Container(
+                      alignment: Alignment.bottomRight,
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                      child: SingleChildScrollView(
+                        reverse: true,
+                        child: Text(
+                          _display,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 72,
+                            fontWeight: FontWeight.w300,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+                  child: _buildKeypad(),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-              child: _buildKeypad(),
+            // 右上角热区：长按 → 输入密码 → 进入便签主界面
+            Positioned(
+              top: 0,
+              right: 0,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onLongPress: _promptPassword,
+                child: const SizedBox(width: 96, height: 88),
+              ),
             ),
           ],
         ),

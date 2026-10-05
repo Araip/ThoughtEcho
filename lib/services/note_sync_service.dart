@@ -103,7 +103,6 @@ class NoteSyncService extends ChangeNotifier {
     required BackupService backupService,
     required DatabaseService databaseService,
     required SettingsService settingsService,
-    required AIAnalysisDatabaseService aiAnalysisDbService,
   })  : _backupService = backupService,
         _databaseService = databaseService,
         _settingsService = settingsService {
