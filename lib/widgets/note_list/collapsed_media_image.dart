@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../gen_l10n/app_localizations.dart';
 import '../../utils/note_list_image_profile.dart';
 import '../../utils/optimized_image_loader.dart';
 

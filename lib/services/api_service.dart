@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import '../gen_l10n/app_localizations.dart';
 import '../services/connectivity_service.dart';
 import '../services/database_service.dart';
 import '../services/network_service.dart';

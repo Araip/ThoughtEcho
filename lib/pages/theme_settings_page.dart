@@ -7,7 +7,6 @@ import '../utils/aptabase_helper.dart';
 import '../utils/color_utils.dart'; // 导入颜色工具
 import '../utils/theme_style_labels.dart';
 import '../widgets/theme_style_preview.dart';
-import '../gen_l10n/app_localizations.dart';
 
 class ThemeSettingsPage extends StatefulWidget {
   const ThemeSettingsPage({super.key});

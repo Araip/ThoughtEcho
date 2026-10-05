@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 import '../theme/theme_style.dart';
 
 /// Data model for a chapter in the user guide

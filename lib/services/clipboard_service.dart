@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../gen_l10n/app_localizations.dart';
 import '../theme/theme_style.dart';
 import '../utils/app_logger.dart';
 import '../utils/aptabase_helper.dart';

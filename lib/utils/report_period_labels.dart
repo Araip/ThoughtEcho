@@ -1,4 +1,3 @@
-import '../gen_l10n/app_localizations.dart';
 import 'report_period_utils.dart';
 
 /// 周期选择的人话说法。

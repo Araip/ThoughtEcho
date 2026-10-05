@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:video_player/video_player.dart';
 import '../constants/app_constants.dart';
 import '../utils/lottie_animation_manager.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../theme/app_semantic_colors.dart';
 import 'app_snackbar.dart';
 import '../theme/theme_style.dart';

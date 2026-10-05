@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/onboarding_models.dart';
 import '../services/api_service.dart';
-import '../gen_l10n/app_localizations.dart';
 
 /// 引导页面配置
 ///

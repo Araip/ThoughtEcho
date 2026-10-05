@@ -7,7 +7,6 @@ import '../services/weather_service.dart'; // Import WeatherService
 import '../services/biometric_service.dart'; // Import BiometricService
 import '../services/database_service.dart'; // Import DatabaseService
 import '../utils/time_utils.dart'; // Import TimeUtils
-import '../gen_l10n/app_localizations.dart';
 import '../theme/theme_style.dart';
 
 class NoteFilterSortSheet extends StatefulWidget {

@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../config/onboarding_config.dart';
-import '../../gen_l10n/app_localizations.dart';
 import '../../models/onboarding_models.dart';
 import '../../services/location_service.dart';
 import '../app_snackbar.dart';

@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import '../gen_l10n/app_localizations.dart';
 
 /// 来源分析结果对话框
 ///

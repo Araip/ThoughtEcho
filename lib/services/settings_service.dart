@@ -4,8 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/release_highlights.dart';
+import '../models/ai_settings.dart';
 import '../models/anniversary_participation.dart';
 import '../models/app_settings.dart';
+import '../models/multi_ai_settings.dart'; // 新增 MultiAISettings 导入
+import '../models/local_ai_settings.dart'; // 新增 LocalAISettings 导入
+import '../models/thoughter_entry.dart'; // 新增 ThoughterPageMode
 import 'package:thoughtecho/utils/app_logger.dart';
 import 'package:thoughtecho/services/api_key_manager.dart';
 import 'package:thoughtecho/utils/aptabase_helper.dart';
@@ -45,11 +49,20 @@ class SettingsService extends ChangeNotifier {
   ///
   /// 判据不能只看 `hasCompletedOnboarding()`：新用户很多是走完引导、之后才去
   /// 设置页配 AI 服务的，那时引导已经完成，自动开启就再也轮不到他。用一次性标记
+  /// 记住「这台设备是新装且还没自动开过」，配好 AI 的那一刻不管在哪都能生效。
+  ///
+  /// 只在首次安装时种：老用户没有这个键，行为完全不变——尤其不会把他自己关掉的
+  /// 周期报告 AI 洞察在下次保存 AI 设置时又打开。
+  static const String _aiAutoEnablePendingKey = 'ai_auto_enable_pending_v1';
   final SharedPreferences _prefs; // 保留以支持数据迁移
   final MMKVService _mmkv = MMKVService(); // 使用MMKV作为主要存储
-  Completer<void>? _saveMultiAiLock; // 串行化设置写入，避免并发覆盖
+  Completer<void>? _saveMultiAiLock;
+  AISettings _aiSettings = AISettings(apiKey: '');
   AppSettings _appSettings = AppSettings.defaultSettings();
   ThemeMode _themeMode = ThemeMode.system;
+  MultiAISettings _multiAISettings = const MultiAISettings(); // 新增多provider设置
+  LocalAISettings _localAISettings =
+      LocalAISettings.defaultSettings(); // 新增本地AI设置
 
   // 迁移标志，只执行一次数据迁移
   static const String _migrationCompleteKey = 'mmkv_migration_complete';
@@ -59,8 +72,13 @@ class SettingsService extends ChangeNotifier {
   static const String _syncSkipConfirmKey = 'sync_skip_confirm';
   static const String _syncDefaultIncludeMediaKey =
       'sync_default_include_media';
+  AISettings get aiSettings => _aiSettings;
   AppSettings get appSettings => _appSettings;
   ThemeMode get themeMode => _themeMode;
+  MultiAISettings get multiAISettings => _multiAISettings; // 新增getter
+  LocalAISettings get localAISettings => _localAISettings; // 新增本地AI设置getter
+  static const String _dontShowAgentExperimentalNoticeKey =
+      'dont_show_agent_experimental_notice';
 
   /// 用户最后一次看过更新说明时的版本号。
   ///
@@ -71,6 +89,13 @@ class SettingsService extends ChangeNotifier {
   bool get syncSkipConfirm => _mmkv.getBool(_syncSkipConfirmKey) ?? false;
   bool get syncDefaultIncludeMedia =>
       _mmkv.getBool(_syncDefaultIncludeMediaKey) ?? true;
+  bool get dontShowAgentExperimentalNotice =>
+      _mmkv.getBool(_dontShowAgentExperimentalNoticeKey) ?? false;
+
+  Future<void> setDontShowAgentExperimentalNotice(bool value) async {
+    await _mmkv.setBool(_dontShowAgentExperimentalNoticeKey, value);
+    notifyListeners();
+  }
 
   /// Thoughter 长期记忆开关。默认开启。
   ///
@@ -91,16 +116,86 @@ class SettingsService extends ChangeNotifier {
 
   bool get agentMemoryEnabled => _mmkv.getBool(_agentMemoryEnabledKey) ?? true;
 
+  /// 写入失败时抛出：这个开关的默认值是 true，静默失败会让用户以为已经关掉，
+  /// 下次启动却发现记忆还在读写——隐私开关不能糊弄过去。
+  Future<void> setAgentMemoryEnabled(bool value) async {
+    final success = await _mmkv.setBool(_agentMemoryEnabledKey, value);
+    if (!success) {
+      AppLogger.e(
+        'Thoughter 记忆开关保存失败：MMKV setBool 返回 false（value=$value）',
+        source: 'SettingsService',
+      );
+      throw StateError('保存 Thoughter 记忆开关失败');
+    }
+    AptabaseHelper.trackEvent('feature_used', {
+      'action': 'toggle_setting',
+      'setting': 'agent_memory',
+      'enabled': value,
+    });
+    notifyListeners();
+  }
+
   /// Dreaming 总开关。默认开启，但只有长期记忆开启时才会生效。
   bool get dreamingEnabled => _mmkv.getBool(_dreamingEnabledKey) ?? true;
+
+  Future<void> setDreamingEnabled(bool value) async {
+    final success = await _mmkv.setBool(_dreamingEnabledKey, value);
+    if (!success) {
+      AppLogger.e(
+        'Dreaming 开关保存失败：MMKV setBool 返回 false（value=$value）',
+        source: 'SettingsService',
+      );
+      throw StateError('保存 Dreaming 开关失败');
+    }
+    AptabaseHelper.trackEvent('feature_used', {
+      'action': 'toggle_setting',
+      'setting': 'dreaming',
+      'enabled': value,
+    });
+    notifyListeners();
+  }
 
   /// 应用启动空闲时是否允许 Dreaming 自动整理画像。
   bool get dreamingOnIdleEnabled =>
       _mmkv.getBool(_dreamingOnIdleEnabledKey) ?? true;
 
+  Future<void> setDreamingOnIdleEnabled(bool value) async {
+    final success = await _mmkv.setBool(_dreamingOnIdleEnabledKey, value);
+    if (!success) {
+      AppLogger.e(
+        'Dreaming 空闲整理开关保存失败：MMKV setBool 返回 false（value=$value）',
+        source: 'SettingsService',
+      );
+      throw StateError('保存 Dreaming 空闲整理开关失败');
+    }
+    AptabaseHelper.trackEvent('feature_used', {
+      'action': 'toggle_setting',
+      'setting': 'dreaming_on_idle',
+      'enabled': value,
+    });
+    notifyListeners();
+  }
+
   /// 周期洞察保存后是否允许 Dreaming 自动继续整理画像。
   bool get dreamingAfterInsightEnabled =>
       _mmkv.getBool(_dreamingAfterInsightEnabledKey) ?? true;
+
+  Future<void> setDreamingAfterInsightEnabled(bool value) async {
+    final success = await _mmkv.setBool(_dreamingAfterInsightEnabledKey, value);
+    if (!success) {
+      AppLogger.e(
+        'Dreaming 洞察后整理开关保存失败：MMKV setBool 返回 false（value=$value）',
+        source: 'SettingsService',
+      );
+      throw StateError('保存 Dreaming 洞察后整理开关失败');
+    }
+    AptabaseHelper.trackEvent('feature_used', {
+      'action': 'toggle_setting',
+      'setting': 'dreaming_after_insight',
+      'enabled': value,
+    });
+    notifyListeners();
+  }
 
   String get userNickname => _mmkv.getString(_userNicknameKey) ?? '';
 
@@ -158,8 +253,40 @@ class SettingsService extends ChangeNotifier {
     return DateTime.fromMillisecondsSinceEpoch(raw);
   }
 
+  /// 写入失败只记日志、不抛：它是一个节流用的时间戳，写丢了最坏结果是下次
+  /// 洞察时多跑一轮归纳，不值得把调用方的流程打断。传入 null 表示重置/清除。
+  Future<void> setLastDreamingAt(DateTime? value) async {
+    final bool success;
+    if (value == null) {
+      success = await _mmkv.remove(_lastDreamingAtKey);
+    } else {
+      success = await _mmkv.setInt(
+        _lastDreamingAtKey,
+        value.millisecondsSinceEpoch,
+      );
+    }
+    if (!success) {
+      AppLogger.w(
+        'Dreaming 时间戳保存失败：MMKV 操作返回 false',
+        source: 'SettingsService',
+      );
+      return;
+    }
+    notifyListeners();
+  }
+
   bool get agentMemoryNoticeShown =>
       _mmkv.getBool(_agentMemoryNoticeShownKey) ?? false;
+
+  /// 写入失败时抛出，让调用方能记一笔——否则用户每次进 Thoughter 都会被同一条
+  /// 提示拦住，而没有任何线索。
+  Future<void> setAgentMemoryNoticeShown(bool value) async {
+    final success = await _mmkv.setBool(_agentMemoryNoticeShownKey, value);
+    if (!success) {
+      throw StateError('保存 Thoughter 记忆提示已读标记失败');
+    }
+    notifyListeners();
+  }
 
   /// 获取最近选择的城市历史列表
   List<CityInfo> get recentCities {
@@ -263,6 +390,82 @@ class SettingsService extends ChangeNotifier {
       );
       return false;
     }
+  }
+
+  ThoughterPageMode get exploreAiAssistantMode =>
+      AIAssistantPageModeStorage.fromStorage(
+        _mmkv.getString(_exploreAiAssistantModeKey),
+      ) ??
+      ThoughterPageMode.chat;
+
+  ThoughterPageMode get noteAiAssistantMode =>
+      AIAssistantPageModeStorage.fromStorage(
+        _mmkv.getString(_noteAiAssistantModeKey),
+      ) ??
+      ThoughterPageMode.noteChat;
+
+  // 周期报告洞察是否使用AI（流式）
+  bool get reportInsightsUseAI => _appSettings.reportInsightsUseAI;
+  Future<void> setReportInsightsUseAI(bool enabled) async {
+    _appSettings = _appSettings.copyWith(reportInsightsUseAI: enabled);
+    await _mmkv.setString(_appSettingsKey, json.encode(_appSettings.toJson()));
+    AptabaseHelper.trackEvent('feature_used', {
+      'action': 'toggle_setting',
+      'setting': 'report_insights_ai',
+      'enabled': enabled,
+    });
+    notifyListeners();
+  }
+
+  // 今日思考是否使用AI（默认开启）
+  bool get todayThoughtsUseAI => _appSettings.todayThoughtsUseAI;
+  Future<void> setTodayThoughtsUseAI(bool enabled) async {
+    _appSettings = _appSettings.copyWith(todayThoughtsUseAI: enabled);
+    await _mmkv.setString(_appSettingsKey, json.encode(_appSettings.toJson()));
+    AptabaseHelper.trackEvent('feature_used', {
+      'action': 'toggle_setting',
+      'setting': 'today_thoughts_ai',
+      'enabled': enabled,
+    });
+    notifyListeners();
+  }
+
+  Future<void> setExploreAiAssistantMode(ThoughterPageMode mode) async {
+    await _mmkv.setString(_exploreAiAssistantModeKey, mode.storageValue);
+    notifyListeners();
+  }
+
+  Future<void> setNoteAiAssistantMode(ThoughterPageMode mode) async {
+    await _mmkv.setString(_noteAiAssistantModeKey, mode.storageValue);
+    notifyListeners();
+  }
+
+  // 是否启用 Sentry 诊断与性能上报
+  bool get sentryEnabled => _appSettings.sentryEnabled;
+  Future<void> setSentryEnabled(bool enabled) async {
+    _appSettings = _appSettings.copyWith(sentryEnabled: enabled);
+    await _mmkv.setString(_appSettingsKey, json.encode(_appSettings.toJson()));
+    SentryDatabaseTracing.configure(enabled: enabled);
+    SentryNetworkTracing.configure(enabled: enabled);
+    SentryHelper.startIfEnabled(enabled);
+    // 只上报开关状态布尔值，不涉及任何诊断内容。
+    AptabaseHelper.trackEvent('feature_used', {
+      'action': 'toggle_setting',
+      'setting': 'sentry',
+      'enabled': enabled,
+    });
+    notifyListeners();
+  }
+
+  // 是否启用匿名功能改进统计（Aptabase）
+  bool get telemetryEnabled => _appSettings.telemetryEnabled;
+  // 注意：这里故意不上报开关事件——上报通道本身就是这个开关，
+  // 关掉时事件发不出去，开时报一条「开启了统计」也没有产品意义。
+  Future<void> setTelemetryEnabled(bool enabled) async {
+    _appSettings = _appSettings.copyWith(telemetryEnabled: enabled);
+    await _mmkv.setString(_appSettingsKey, json.encode(_appSettings.toJson()));
+    await AptabaseHelper.configure(enabled: enabled);
+    notifyListeners();
   }
 
   // Sentry 错误日志上报提示弹窗是否已显示过
@@ -865,6 +1068,9 @@ class SettingsService extends ChangeNotifier {
       // 只会推成老用户——#513 的默认值一直没生效就是这个原因。
       await _seedFreshInstallThemeStyle();
 
+      // 新装用户配好 AI 服务后自动开启相关 AI 功能，见 _aiAutoEnablePendingKey。
+      await _mmkv.setBool(_aiAutoEnablePendingKey, true);
+
       // 首次安装时，载入应用默认设置
       _loadAppSettings();
       _appSettings = _appSettings.copyWith(
@@ -896,6 +1102,51 @@ class SettingsService extends ChangeNotifier {
       }
     }
     // 继续加载其他设置
+    await _loadAISettings();
+    await _loadMultiAISettings(); // 新增
+    await _loadLocalAISettings(); // 新增本地AI设置加载
+    _loadAppSettings();
+    _loadThemeMode();
+
+    await _secureLegacyApiKey();
+    await _syncExcerptIntentEntryPoint();
+
+    notifyListeners();
+  }
+
+  /// 首次安装时把默认主题风格（[ThemeStyle.freshInstallStyle]，信笺）种进存储。
+  ///
+  /// **只在键还空着时写。** 主题层因为某些路径先跑了一步就可能已经有取值，
+  /// 覆盖掉就是替用户改外观。
+  ///
+  /// 注意备份**目前不含**主题风格（[getAllSettingsForBackup] 只带 app_settings /
+  /// theme_mode 等几项），所以「换机恢复后风格回到自己选的那套」这件事这里兜不住，
+  /// 那是备份契约的既有缺口，要补也是补在备份那一侧。
+  ///
+  /// 写失败只记日志：拿不到品牌默认外观是可以接受的降级，让整个设置加载失败不是。
+  Future<void> _seedFreshInstallThemeStyle() async {
+    try {
+      if (_mmkv.containsKey(ThemeStyle.storageKey)) return;
+      final success = await _mmkv.setString(
+        ThemeStyle.storageKey,
+        ThemeStyle.freshInstallStyle.name,
+      );
+      if (!success) {
+        logError(
+          '写入全新安装默认主题风格 ${ThemeStyle.freshInstallStyle.name} 返回 false',
+          source: 'SettingsService',
+        );
+      }
+    } catch (e, stack) {
+      logError(
+        '写入全新安装默认主题风格失败',
+        error: e,
+        stackTrace: stack,
+        source: 'SettingsService',
+      );
+    }
+  }
+
   Future<void> _syncExcerptIntentEntryPoint() async {
     if (kIsWeb) {
       return;
@@ -907,6 +1158,19 @@ class SettingsService extends ChangeNotifier {
   }
 
   // 加载AI设置（简化版，主要用于向后兼容）
+  Future<void> _loadAISettings() async {
+    final String? aiSettingsJson =
+        _mmkv.getString(_aiSettingsKey) ?? _prefs.getString(_aiSettingsKey);
+
+    if (aiSettingsJson != null) {
+      final Map<String, dynamic> settingsMap = json.decode(aiSettingsJson);
+      _aiSettings = AISettings.fromJson(settingsMap);
+    } else {
+      _aiSettings = AISettings.defaultSettings();
+      await _mmkv.setString(_aiSettingsKey, json.encode(_aiSettings.toJson()));
+    }
+  }
+
   /// 修复：加载应用设置，增加数据验证和迁移安全性
   void _loadAppSettings() {
     try {
@@ -1067,6 +1331,19 @@ class SettingsService extends ChangeNotifier {
     }
   }
 
+  Future<void> updateAISettings(AISettings settings) async {
+    // Security: Ensure we don't persist API key in plaintext in legacy AISettings
+    if (settings.apiKey.isNotEmpty) {
+      _aiSettings = settings.copyWith(apiKey: '');
+    } else {
+      _aiSettings = settings;
+    }
+    final Map<String, dynamic> settingsMap = _aiSettings.toJson();
+    settingsMap.remove('apiKey');
+    await _mmkv.setString(_aiSettingsKey, json.encode(settingsMap));
+    notifyListeners();
+  }
+
   Future<void> updateAppSettings(AppSettings settings) async {
     _appSettings = settings;
     await _mmkv.setString(_appSettingsKey, json.encode(settings.toJson()));
@@ -1162,6 +1439,17 @@ class SettingsService extends ChangeNotifier {
   }
 
   // 设置AI卡片生成功能是否启用
+  Future<void> setAICardGenerationEnabled(bool enabled) async {
+    _appSettings = _appSettings.copyWith(aiCardGenerationEnabled: enabled);
+    await _mmkv.setString(_appSettingsKey, json.encode(_appSettings.toJson()));
+    AptabaseHelper.trackEvent('feature_used', {
+      'action': 'toggle_setting',
+      'setting': 'ai_card_generation',
+      'enabled': enabled,
+    });
+    notifyListeners();
+  }
+
   /// 获取上次记录的版本号
   String? getAppVersion() {
     return _mmkv.getString(_lastVersionKey);
@@ -1173,12 +1461,246 @@ class SettingsService extends ChangeNotifier {
   }
 
   // 加载多provider AI设置
+  Future<void> _loadMultiAISettings() async {
+    final String? multiAiSettingsJson = _mmkv.getString(_multiAiSettingsKey) ??
+        _prefs.getString(_multiAiSettingsKey);
+
+    if (multiAiSettingsJson != null) {
+      try {
+        final Map<String, dynamic> settingsMap = json.decode(
+          multiAiSettingsJson,
+        );
+        _multiAISettings = MultiAISettings.fromJson(settingsMap);
+      } catch (e) {
+        logDebug('加载多provider设置失败: $e');
+        _multiAISettings = MultiAISettings.defaultSettings();
+        await saveMultiAISettings(_multiAISettings);
+      }
+    } else {
+      _multiAISettings = MultiAISettings.defaultSettings();
+      await saveMultiAISettings(_multiAISettings);
+    }
+  }
+
+  /// 保存多provider AI设置
+  Future<void> saveMultiAISettings(MultiAISettings settings) async {
+    while (_saveMultiAiLock != null) {
+      await _saveMultiAiLock!.future;
+    }
+    final completer = Completer<void>();
+    _saveMultiAiLock = completer;
+
+    bool appSettingsWritten = false;
+    final appKeyExisted = candidateAppSettingsKeyExists();
+    String? previousAppJson;
+
+    Future<void> rollbackAppSettings() async {
+      if (!appSettingsWritten) return;
+      appSettingsWritten = false;
+      try {
+        if (appKeyExisted && previousAppJson != null) {
+          final rollbackOk =
+              await _mmkv.setString(_appSettingsKey, previousAppJson);
+          if (!rollbackOk) {
+            AppLogger.e(
+              '回滚应用设置失败：MMKV setString 返回 false',
+              source: 'SettingsService',
+            );
+          }
+        } else if (!appKeyExisted) {
+          final rollbackOk = await _mmkv.remove(_appSettingsKey);
+          if (!rollbackOk) {
+            AppLogger.e(
+              '回滚应用设置失败：MMKV remove 返回 false',
+              source: 'SettingsService',
+            );
+          }
+        }
+      } catch (rollbackError, rollbackStack) {
+        AppLogger.e(
+          '回滚应用设置异常',
+          error: rollbackError,
+          stackTrace: rollbackStack,
+          source: 'SettingsService',
+        );
+      }
+    }
+
+    try {
+      if (appKeyExisted) {
+        try {
+          previousAppJson = _mmkv.getString(_appSettingsKey);
+        } catch (e, s) {
+          AppLogger.e(
+            '读取原有应用设置失败，放弃写操作',
+            error: e,
+            stackTrace: s,
+            source: 'SettingsService',
+          );
+          throw StateError('读取原有应用设置失败');
+        }
+      }
+
+      // 在互斥锁内部基于最新的 _appSettings 构建 candidateAppSettings，防止并发下的覆盖
+      final hasActiveAi = settings.providers.any(
+        (p) => p.isEnabled && p.apiUrl.trim().isNotEmpty,
+      );
+      final candidateAppSettings = (_aiAutoEnablePending && hasActiveAi)
+          ? _appSettings.copyWith(
+              reportInsightsUseAI: true,
+              todayThoughtsUseAI: true,
+              aiCardGenerationEnabled: true,
+            )
+          : null;
+
+      if (candidateAppSettings != null &&
+          appKeyExisted &&
+          previousAppJson == null) {
+        AppLogger.e(
+          '应用设置键存在但读取值为 null，中止保存以防数据丢失',
+          source: 'SettingsService',
+        );
+        throw StateError('读取原有应用设置失败');
+      }
+
+      final multiJson = json.encode(settings.toJson());
+      final appJson = candidateAppSettings != null
+          ? json.encode(candidateAppSettings.toJson())
+          : null;
+
+      if (appJson != null) {
+        final successApp = await _mmkv.setString(_appSettingsKey, appJson);
+        if (!successApp) {
+          AppLogger.e(
+            '保存应用设置失败：MMKV setString 返回 false（key=$_appSettingsKey）',
+            source: 'SettingsService',
+          );
+          throw StateError('保存应用设置失败');
+        }
+        appSettingsWritten = true;
+      }
+
+      final successMulti =
+          await _mmkv.setString(_multiAiSettingsKey, multiJson);
+      if (!successMulti) {
+        AppLogger.e(
+          '保存多provider AI设置失败：MMKV setString 返回 false（key=$_multiAiSettingsKey）',
+          source: 'SettingsService',
+        );
+        await rollbackAppSettings();
+        throw StateError('保存多provider AI设置失败');
+      }
+
+      _multiAISettings = settings;
+      if (candidateAppSettings != null) {
+        _appSettings = candidateAppSettings;
+        // 自动开启是一次性的：清掉标记，之后用户自己关掉哪个就是哪个。
+        // 清不掉只会多自动开一次，不值得让整个保存失败，所以只记日志。
+        await _clearAiAutoEnablePending();
+      }
+      notifyListeners();
+    } catch (e, s) {
+      await rollbackAppSettings();
+      AppLogger.e(
+        '保存多provider AI设置异常',
+        error: e,
+        stackTrace: s,
+        source: 'SettingsService',
+      );
+      rethrow;
+    } finally {
+      _saveMultiAiLock = null;
+      completer.complete();
+    }
+  }
+
+  /// 这台设备是否还欠一次 AI 功能自动开启，见 [_aiAutoEnablePendingKey]。
+  /// false 表示已经自动开过一次，null（键不存在）才走下面的旧判据。
+  ///
+  /// 读不到标记时回退到旧判据（引导没走完就算新用户）：这个版本之前装的用户
+  /// 没有这个键，不该因为升级就丢掉引导期间的自动开启。
+  bool get _aiAutoEnablePending {
+    try {
+      return _mmkv.getBool(_aiAutoEnablePendingKey) ??
+          !hasCompletedOnboarding();
+    } catch (e) {
+      logDebug('读取 AI 自动开启标记失败: $e');
+      return !hasCompletedOnboarding();
+    }
+  }
+
+  /// 标记「这次自动开启已经做过了」。
+  ///
+  /// 写 false 而不是删键：删掉之后 [_aiAutoEnablePending] 会退回旧判据
+  /// （引导没走完就算新用户），于是引导期间每存一次 AI 设置都会把用户刚关掉的
+  /// 开关再打开一遍。false 是明确的「做过了」，和「老用户，从来没有过这个键」
+  /// （null）是两回事。
+  Future<void> _clearAiAutoEnablePending() async {
+    try {
+      final ok = await _mmkv.setBool(_aiAutoEnablePendingKey, false);
+      if (!ok) {
+        AppLogger.e(
+          '清除 AI 自动开启标记失败：MMKV setBool 返回 false',
+          source: 'SettingsService',
+        );
+      }
+    } catch (e, s) {
+      AppLogger.e(
+        '清除 AI 自动开启标记异常',
+        error: e,
+        stackTrace: s,
+        source: 'SettingsService',
+      );
+    }
+  }
+
   @visibleForTesting
   bool candidateAppSettingsKeyExists() => _mmkv.containsKey(_appSettingsKey);
+
+  /// 更新多provider AI设置
+  Future<void> updateMultiAISettings(MultiAISettings settings) async {
+    await saveMultiAISettings(settings);
+  }
+
+  /// 加载本地AI设置
+  Future<void> _loadLocalAISettings() async {
+    final String? localAiSettingsJson = _mmkv.getString(_localAiSettingsKey);
+
+    if (localAiSettingsJson != null) {
+      try {
+        final Map<String, dynamic> settingsMap = json.decode(
+          localAiSettingsJson,
+        );
+        _localAISettings = LocalAISettings.fromJson(settingsMap);
+      } catch (e) {
+        logDebug('加载本地AI设置失败: $e');
+        _localAISettings = LocalAISettings.defaultSettings();
+        await saveLocalAISettings(_localAISettings);
+      }
+    } else {
+      _localAISettings = LocalAISettings.defaultSettings();
+      await saveLocalAISettings(_localAISettings);
+    }
+  }
+
+  /// 保存本地AI设置
+  Future<void> saveLocalAISettings(LocalAISettings settings) async {
+    _localAISettings = settings;
+    await _mmkv.setString(_localAiSettingsKey, json.encode(settings.toJson()));
+    notifyListeners();
+  }
+
+  /// 更新本地AI设置
+  Future<void> updateLocalAISettings(LocalAISettings settings) async {
+    await saveLocalAISettings(settings);
+  }
 
   /// 获取所有设置数据用于备份
   Map<String, dynamic> getAllSettingsForBackup() {
     return {
+      'ai_settings': _aiSettings.toJson(),
+      'multi_ai_settings': _multiAISettings.toJson(),
+      'local_ai_settings': _localAISettings.toJson(),
       'app_settings': _appSettings.toJson(),
       'theme_mode': _themeMode.index,
       'device_id': getOrCreateDeviceId(),
@@ -1214,6 +1736,35 @@ class SettingsService extends ChangeNotifier {
             }
           }
         }
+        final multiAiSettings = MultiAISettings.fromJson(multiAiSettingsJson);
+        await saveMultiAISettings(multiAiSettings);
+      }
+
+      // 恢复单provider遗留AI设置（仅当对应provider未被multi_ai覆盖时）
+      if (backupData.containsKey('ai_settings')) {
+        final aiSettingsJson =
+            backupData['ai_settings'] as Map<String, dynamic>;
+        final rawApiKey =
+            (aiSettingsJson['apiKey'] ?? aiSettingsJson['api_key']) as String?;
+        if (rawApiKey != null && rawApiKey.trim().isNotEmpty) {
+          const defaultProviderId = 'openai';
+          if (!restoredProviderIds.contains(defaultProviderId)) {
+            await apiKeyManager.saveProviderApiKey(
+              defaultProviderId,
+              rawApiKey.trim(),
+            );
+          }
+        }
+        final aiSettings = AISettings.fromJson(aiSettingsJson);
+        await updateAISettings(aiSettings);
+      }
+
+      // 恢复本地AI设置
+      if (backupData.containsKey('local_ai_settings')) {
+        final localAiSettingsJson =
+            backupData['local_ai_settings'] as Map<String, dynamic>;
+        final localAiSettings = LocalAISettings.fromJson(localAiSettingsJson);
+        await saveLocalAISettings(localAiSettings);
       }
 
       // 恢复应用设置
@@ -1291,4 +1842,234 @@ class SettingsService extends ChangeNotifier {
     await _mmkv.setString(key, value);
   }
 
+  /// 迁移遗留的明文API密钥到安全存储，并彻底清理 SharedPreferences 与 MMKV 中的明文密钥
+  Future<void> _secureLegacyApiKey() async {
+    final apiKeyManager = APIKeyManager();
+
+    // 1. 处理遗留单 Provider AI 设置 (_aiSettings)
+    if (_aiSettings.apiKey.isNotEmpty) {
+      String? providerId = _multiAISettings.currentProviderId;
+      if (providerId == null) {
+        final providers = _multiAISettings.providers;
+        if (providers.any((p) => p.id == 'openai')) {
+          providerId = 'openai';
+        } else {
+          final nonDefault = providers.where((p) => p.id != 'default');
+          providerId = nonDefault.isNotEmpty ? nonDefault.first.id : 'openai';
+        }
+      }
+
+      try {
+        final hasSecureKey = await apiKeyManager.hasValidProviderApiKey(
+          providerId,
+        );
+        if (!hasSecureKey) {
+          await apiKeyManager.saveProviderApiKey(
+              providerId, _aiSettings.apiKey);
+          logDebug(
+            'Migrated legacy plaintext API key to SecureStorage for provider: $providerId',
+          );
+        }
+      } catch (e) {
+        logWarning(
+          'Error securing legacy API key: $e',
+          source: 'SettingsService',
+        );
+      }
+
+      _aiSettings = _aiSettings.copyWith(apiKey: '');
+    }
+
+    // 清理 _aiSettingsKey 中的明文 apiKey
+    await _scrubKeyFromStorage(_aiSettingsKey, 'apiKey');
+
+    // 2. 处理遗留多 Provider AI 设置 (_multiAiSettingsKey) 中可能残存的明文 API Key
+    await _migrateAndScrubMultiAiKeys(apiKeyManager);
+  }
+
+  /// 检查 MMKV 和 SharedPreferences 中的 _multiAiSettingsKey，
+  /// 将所有 provider 的明文 apiKey 迁移至 APIKeyManager，并从持久化存储中清除 apiKey 字段。
+  Future<void> _migrateAndScrubMultiAiKeys(APIKeyManager apiKeyManager) async {
+    final rawMmkv = _mmkv.getString(_multiAiSettingsKey);
+    final rawPrefs = _prefs.getString(_multiAiSettingsKey);
+
+    for (final rawJson in [rawMmkv, rawPrefs]) {
+      if (rawJson == null || rawJson.isEmpty) continue;
+      try {
+        final decoded = json.decode(rawJson);
+        if (decoded is Map<String, dynamic>) {
+          final rawProviders =
+              decoded['providers'] ?? decoded['availableProviders'];
+          if (rawProviders is List) {
+            for (final item in rawProviders) {
+              if (item is Map<String, dynamic>) {
+                final id = item['id'] as String?;
+                final rawKey = (item['apiKey'] ?? item['api_key']) as String?;
+                if (id != null &&
+                    id.isNotEmpty &&
+                    rawKey != null &&
+                    rawKey.trim().isNotEmpty) {
+                  final hasKey = await apiKeyManager.hasValidProviderApiKey(id);
+                  if (!hasKey) {
+                    await apiKeyManager.saveProviderApiKey(id, rawKey.trim());
+                    logDebug(
+                      'Migrated legacy multi-AI API key for provider: $id',
+                    );
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        logWarning(
+          'Error parsing legacy multi-AI settings for key migration: $e',
+          source: 'SettingsService',
+        );
+      }
+    }
+
+    // 从 MMKV 的 multi_ai_settings 中擦除所有 apiKey / api_key 字段
+    if (rawMmkv != null &&
+        (rawMmkv.contains('"apiKey"') || rawMmkv.contains('"api_key"'))) {
+      try {
+        final Map<String, dynamic> map = json.decode(rawMmkv);
+        final rawProviders = map['providers'] ?? map['availableProviders'];
+        if (rawProviders is List) {
+          for (final p in rawProviders) {
+            if (p is Map<String, dynamic>) {
+              p.remove('apiKey');
+              p.remove('api_key');
+            }
+          }
+          final success =
+              await _mmkv.setString(_multiAiSettingsKey, json.encode(map));
+          if (success) {
+            logDebug(
+              'Scrubbed plaintext API keys from MMKV _multiAiSettingsKey.',
+            );
+          } else {
+            logWarning(
+              'Failed to write scrubbed multi-AI settings to MMKV: setString returned false',
+              source: 'SettingsService',
+            );
+          }
+        }
+      } catch (e) {
+        logWarning(
+          'Failed to scrub multi-AI keys from MMKV: $e',
+          source: 'SettingsService',
+        );
+      }
+    }
+
+    // 从 SharedPreferences 中清理 multi_ai_settings 明文 Key
+    if (rawPrefs != null &&
+        (rawPrefs.contains('"apiKey"') || rawPrefs.contains('"api_key"'))) {
+      try {
+        final Map<String, dynamic> map = json.decode(rawPrefs);
+        final rawProviders = map['providers'] ?? map['availableProviders'];
+        if (rawProviders is List) {
+          for (final p in rawProviders) {
+            if (p is Map<String, dynamic>) {
+              p.remove('apiKey');
+              p.remove('api_key');
+            }
+          }
+          final success =
+              await _prefs.setString(_multiAiSettingsKey, json.encode(map));
+          if (success) {
+            logDebug(
+              'Scrubbed plaintext API keys from SharedPreferences _multiAiSettingsKey.',
+            );
+          } else {
+            logWarning(
+              'Failed to write scrubbed multi-AI settings to SharedPreferences: setString returned false',
+              source: 'SettingsService',
+            );
+          }
+        }
+      } catch (e) {
+        logWarning(
+          'Failed to scrub multi-AI keys from SharedPreferences: $e',
+          source: 'SettingsService',
+        );
+      }
+    }
+  }
+
+  /// 擦除指定 storageKey 中 Map 的 targetField 字段（同时支持 MMKV 与 SharedPreferences）
+  Future<void> _scrubKeyFromStorage(
+    String storageKey,
+    String targetField,
+  ) async {
+    final fieldsToScrub =
+        targetField == 'apiKey' ? ['apiKey', 'api_key'] : [targetField];
+
+    // MMKV
+    try {
+      final rawMmkv = _mmkv.getString(storageKey);
+      if (rawMmkv != null &&
+          fieldsToScrub.any((f) => rawMmkv.contains('"$f"'))) {
+        final Map<String, dynamic> map = json.decode(rawMmkv);
+        bool changed = false;
+        for (final field in fieldsToScrub) {
+          if (map.containsKey(field)) {
+            map.remove(field);
+            changed = true;
+          }
+        }
+        if (changed) {
+          final success = await _mmkv.setString(storageKey, json.encode(map));
+          if (success) {
+            logDebug('Scrubbed $fieldsToScrub from MMKV key $storageKey');
+          } else {
+            logWarning(
+              'Failed to scrub $fieldsToScrub from MMKV ($storageKey): setString returned false',
+              source: 'SettingsService',
+            );
+          }
+        }
+      }
+    } catch (e) {
+      logWarning(
+        'Failed to scrub $targetField from MMKV ($storageKey): $e',
+        source: 'SettingsService',
+      );
+    }
+
+    // SharedPreferences
+    try {
+      final rawPrefs = _prefs.getString(storageKey);
+      if (rawPrefs != null &&
+          fieldsToScrub.any((f) => rawPrefs.contains('"$f"'))) {
+        final Map<String, dynamic> map = json.decode(rawPrefs);
+        bool changed = false;
+        for (final field in fieldsToScrub) {
+          if (map.containsKey(field)) {
+            map.remove(field);
+            changed = true;
+          }
+        }
+        if (changed) {
+          final success = await _prefs.setString(storageKey, json.encode(map));
+          if (success) {
+            logDebug(
+              'Scrubbed $fieldsToScrub from SharedPreferences key $storageKey',
+            );
+          } else {
+            logWarning(
+              'Failed to scrub $fieldsToScrub from SharedPreferences ($storageKey): setString returned false',
+              source: 'SettingsService',
+            );
+          }
+        }
+      }
+    } catch (e) {
+      logWarning(
+        'Failed to scrub $targetField from SharedPreferences ($storageKey): $e',
+        source: 'SettingsService',
+      );
+    }
+  }
 }

@@ -1,4 +1,3 @@
-import '../gen_l10n/app_localizations.dart';
 
 /// 文件状态枚举（UI 文案通过 l10n 获取）
 enum FileStatus {

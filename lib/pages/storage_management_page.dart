@@ -8,7 +8,6 @@ import '../services/weather_service.dart';
 import '../services/database_service.dart';
 import '../services/data_directory_service.dart';
 import '../constants/app_constants.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../theme/app_semantic_colors.dart';
 import '../theme/theme_style.dart';
 import '../widgets/app_snackbar.dart';

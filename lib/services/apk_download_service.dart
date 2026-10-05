@@ -5,7 +5,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../theme/theme_style.dart';
 import '../utils/app_logger.dart';
 import '../widgets/app_snackbar.dart';

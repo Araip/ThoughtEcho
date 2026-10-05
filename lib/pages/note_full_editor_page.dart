@@ -4,7 +4,6 @@ import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart' show Position;
 import 'package:provider/provider.dart';
-import '../gen_l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import '../services/database_service.dart';
 import '../models/quote_model.dart';

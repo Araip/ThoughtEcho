@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../gen_l10n/app_localizations.dart';
 import '../models/quote_model.dart';
 import '../services/database_service.dart';
 import '../services/mmkv_service.dart';

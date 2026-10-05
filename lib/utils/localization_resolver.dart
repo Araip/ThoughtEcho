@@ -1,6 +1,5 @@
 import 'dart:ui' show Locale, PlatformDispatcher;
 
-import '../gen_l10n/app_localizations.dart';
 import 'i18n_language.dart';
 
 /// 在没有 `BuildContext` 的地方取一份 [AppLocalizations]。

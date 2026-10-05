@@ -11,7 +11,6 @@ import 'package:thoughtecho/utils/app_tracer.dart';
 import 'package:uuid/uuid.dart';
 
 import '../constants/app_constants.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../models/note_tag.dart';
 import '../models/quote_model.dart';
 import '../pages/note_full_editor_page.dart'; // 导入全屏富文本编辑器

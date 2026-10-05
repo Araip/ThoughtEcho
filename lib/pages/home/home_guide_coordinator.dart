@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 
 import 'package:thoughtecho/pages/settings_page.dart';
 import 'package:thoughtecho/services/database_service.dart';
-import 'package:thoughtecho/services/smart_push_service.dart';
 import 'package:thoughtecho/pages/home/guide_quota.dart';
 import 'package:thoughtecho/utils/feature_guide_helper.dart';
 import 'package:thoughtecho/widgets/note_list_view.dart';

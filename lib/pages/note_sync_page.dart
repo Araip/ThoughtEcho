@@ -7,7 +7,6 @@ import 'package:thoughtecho/services/note_sync_service.dart';
 import 'package:thoughtecho/services/localsend/models/device.dart';
 import 'package:thoughtecho/services/device_identity_manager.dart';
 import 'package:thoughtecho/utils/app_logger.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../utils/aptabase_helper.dart';
 import '../widgets/app_snackbar.dart';
 import '../theme/theme_style.dart';

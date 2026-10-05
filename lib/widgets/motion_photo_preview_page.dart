@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:video_player/video_player.dart';
 
-import '../gen_l10n/app_localizations.dart';
 import '../utils/app_logger.dart';
 import '../utils/local_video_controller.dart';
 import '../utils/motion_photo_utils.dart';

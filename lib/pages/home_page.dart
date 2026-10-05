@@ -23,13 +23,10 @@ import 'category_home_page.dart';
 import '../services/settings_service.dart'; // Import SettingsService
 import '../utils/app_logger.dart';
 import '../utils/aptabase_helper.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../services/draft_service.dart';
 import '../widgets/anniversary_animation_overlay.dart';
 import '../utils/anniversary_display_utils.dart';
 import '../utils/draft_restore_utils.dart';
-import 'home/home_card_actions.dart';
-import 'home/home_capture_actions.dart';
 import 'home/home_guide_coordinator.dart';
 import 'home/home_note_editor_actions.dart';
 import 'home/home_note_mutation_actions.dart';

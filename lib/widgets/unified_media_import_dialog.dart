@@ -10,7 +10,6 @@ import '../theme/theme_style.dart';
 import '../utils/stream_file_selector.dart';
 import '../services/large_file_manager.dart' as lfm;
 import '../utils/app_logger.dart';
-import '../gen_l10n/app_localizations.dart';
 import 'app_snackbar.dart';
 
 /// 统一的媒体导入对话框

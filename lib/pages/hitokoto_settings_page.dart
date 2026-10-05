@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../gen_l10n/app_localizations.dart';
 import '../pages/api_ninjas_category_selection_page.dart';
 import '../services/api_service.dart';
 import '../services/settings_service.dart';

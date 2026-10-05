@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../models/merge_report.dart';
 import '../services/backup_service.dart';
 import '../services/large_file_manager.dart';

@@ -1,4 +1,3 @@
-import '../gen_l10n/app_localizations.dart';
 import '../models/note_tag.dart';
 import '../services/database_service.dart';
 

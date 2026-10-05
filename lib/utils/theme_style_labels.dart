@@ -1,4 +1,3 @@
-import '../gen_l10n/app_localizations.dart';
 import '../theme/theme_style.dart';
 
 /// 主题风格的显示名与一句说明。

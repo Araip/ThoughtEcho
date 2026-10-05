@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../extensions/note_tag_localization_extension.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../models/note_tag.dart';
 import '../services/biometric_service.dart';
 import '../services/clipboard_service.dart';

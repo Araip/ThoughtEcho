@@ -9,7 +9,6 @@ import 'package:thoughtecho/utils/jank_detector.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 // 国际化
-import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 // 第三方包
 import 'package:dynamic_color/dynamic_color.dart';
@@ -21,8 +20,6 @@ import 'package:provider/provider.dart';
 import 'package:logging/logging.dart' as logging;
 
 // 项目内部
-import 'package:thoughtecho/services/ai_analysis_database_service.dart';
-import 'package:thoughtecho/services/chat_session_service.dart';
 import 'package:thoughtecho/services/database_service.dart';
 import 'package:thoughtecho/services/location_service.dart';
 import 'package:thoughtecho/services/mmkv_service.dart';
@@ -42,10 +39,7 @@ import 'package:thoughtecho/utils/sentry_database_tracing.dart';
 import 'package:thoughtecho/utils/sentry_helper.dart';
 import 'package:thoughtecho/utils/sentry_network_tracing.dart';
 import 'package:thoughtecho/utils/update_dialog_helper.dart';
-import 'package:thoughtecho/services/smart_push_service.dart';
-import 'package:thoughtecho/services/background_push_handler.dart';
 import 'package:thoughtecho/services/webdav_sync_service.dart';
-import 'package:workmanager/workmanager.dart';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'utils/app_logger.dart';
 import 'utils/app_navigator_key.dart';
@@ -116,7 +110,6 @@ Future<void> main() async {
           if (Platform.isAndroid) {
             await AndroidAlarmManager.initialize();
           }
-          await Workmanager().initialize(callbackDispatcher);
           logInfo('后台任务组件初始化成功', source: 'Main');
         } catch (e) {
           logError('后台任务组件初始化失败: $e', source: 'Main');
@@ -461,33 +454,6 @@ Future<void> main() async {
               // 媒体清理服务初始化失败不影响主要功能，继续执行
             }
 
-            // 初始化独立聊天数据库。聊天历史不再存入主笔记库，
-            // 避免大量会话记录影响核心笔记数据生命周期。
-            try {
-              await chatSessionService.init();
-              if (databaseService.isInitialized) {
-                try {
-                  await chatSessionService.migrateFromMainDatabase(
-                    databaseService.database,
-                  );
-                } catch (e, stackTrace) {
-                  logError(
-                    '旧聊天记录迁移失败: $e',
-                    error: e,
-                    stackTrace: stackTrace,
-                    source: 'BackgroundInit',
-                  );
-                }
-              }
-              logInfo('聊天会话数据库初始化完成', source: 'BackgroundInit');
-            } catch (e, stackTrace) {
-              logError(
-                '聊天会话数据库初始化失败: $e',
-                error: e,
-                stackTrace: stackTrace,
-                source: 'BackgroundInit',
-              );
-            }
 
             // 初始化完成，更新状态
             servicesInitialized.value = true;

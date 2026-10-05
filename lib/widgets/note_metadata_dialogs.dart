@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 import 'package:thoughtecho/services/local_geocoding_service.dart';
 import 'package:thoughtecho/services/location_service.dart';
 import 'package:thoughtecho/services/weather_service.dart';

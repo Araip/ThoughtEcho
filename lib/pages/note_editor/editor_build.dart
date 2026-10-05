@@ -72,11 +72,6 @@ extension _NoteEditorBuild on _NoteFullEditorPageState {
               onPressed: () => _showMetadataDialog(context),
             ),
             IconButton(
-              icon: Icon(Icons.auto_awesome),
-              tooltip: l10n.aiAssistantLabel,
-              onPressed: () => _showAIOptions(context),
-            ),
-            IconButton(
               icon: _editorState.isLoadingFullQuote
                   ? SizedBox(
                       width: 24,

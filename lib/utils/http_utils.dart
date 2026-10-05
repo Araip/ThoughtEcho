@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:thoughtecho/utils/dio_performance_interceptor.dart';
 import 'package:thoughtecho/utils/sentry_network_tracing.dart';
-import 'dio_network_utils.dart';
 import 'http_response.dart';
 import 'package:thoughtecho/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';

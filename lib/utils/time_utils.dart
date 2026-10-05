@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../gen_l10n/app_localizations.dart';
 
 /// 时间工具类，用于处理时间相关的功能
 class TimeUtils {

@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../gen_l10n/app_localizations.dart';
 import '../controllers/onboarding_controller.dart';
 import '../config/onboarding_config.dart';
 import '../models/onboarding_models.dart';

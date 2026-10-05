@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/onboarding_config.dart';
-import '../../gen_l10n/app_localizations.dart';
 import '../../models/onboarding_models.dart';
 import '../../services/api_service.dart';
 import '../../theme/app_theme.dart';

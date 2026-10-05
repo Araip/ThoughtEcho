@@ -10,7 +10,6 @@ import '../widgets/app_error_view.dart';
 import '../utils/color_utils.dart'; // Import color_utils.dart
 import '../utils/time_utils.dart';
 import '../constants/app_constants.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../theme/theme_style.dart';
 
 class LogsPage extends StatefulWidget {

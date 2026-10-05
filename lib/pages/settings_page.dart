@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/app_settings.dart';
@@ -327,11 +326,6 @@ class SettingsPageState extends State<SettingsPage> {
                   },
                 ),
                 // 定制版：已移除「AI 设置」入口
-                // 智能推送
-                Builder(
-                  builder: (context) {
-                  },
-                ),
                 // 「每日一言」入口已移除（定制版）
                 // 日志和实验性开关已移至「实验室」Card（_buildLabSection）
                 // 存储管理

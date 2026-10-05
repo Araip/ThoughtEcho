@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 
-import '../gen_l10n/app_localizations.dart';
 import '../theme/theme_style.dart';
 
 /// 许可证页面

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 庆典横幅上的纪念勋章墙：参与过第几届就挂第几枚。
 ///

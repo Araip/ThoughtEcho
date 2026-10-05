@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 天气数据模型
 class WeatherData {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../gen_l10n/app_localizations.dart';
 
 /// 增强的代码块组件，支持语法高亮和复制功能
 class CodeBlockWidget extends StatefulWidget {

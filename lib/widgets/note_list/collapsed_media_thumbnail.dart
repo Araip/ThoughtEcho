@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../gen_l10n/app_localizations.dart';
 import '../../theme/theme_style.dart';
 import '../../utils/delta_media_extractor.dart';
 import '../../utils/optimized_image_loader.dart';

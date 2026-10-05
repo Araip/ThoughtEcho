@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../constants/app_constants.dart';
 import '../controllers/weather_search_controller.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../services/location_service.dart';
 import '../services/settings_service.dart';
 import '../services/weather_service.dart';

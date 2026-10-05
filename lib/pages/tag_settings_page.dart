@@ -6,7 +6,6 @@ import '../services/database_service.dart';
 import '../models/note_tag.dart';
 import '../utils/aptabase_helper.dart';
 import '../utils/icon_utils.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../theme/theme_style.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/app_loading_view.dart';

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
-import '../gen_l10n/app_localizations.dart';
 import '../theme/theme_style.dart';
 import 'unified_media_import_dialog.dart';
 

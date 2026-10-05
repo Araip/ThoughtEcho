@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../utils/lottie_animation_manager.dart';
 
 class AppLoadingView extends StatelessWidget {

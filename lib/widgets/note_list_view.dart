@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../extensions/note_tag_localization_extension.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../models/app_settings.dart';
 import '../models/quote_model.dart';
 import '../models/note_tag.dart';

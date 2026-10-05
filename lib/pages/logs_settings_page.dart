@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../services/unified_log_service.dart'; // 使用统一日志服务
 import 'logs_page.dart'; // 导入日志查看页面
 import '../utils/color_utils.dart'; // 导入颜色工具
-import '../gen_l10n/app_localizations.dart';
 
 class LogsSettingsPage extends StatelessWidget {
   const LogsSettingsPage({super.key});

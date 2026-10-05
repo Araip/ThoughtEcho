@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import '../gen_l10n/app_localizations.dart';
 import '../services/apk_download_service.dart';
 import '../services/version_check_service.dart';
 import '../theme/theme_style.dart';

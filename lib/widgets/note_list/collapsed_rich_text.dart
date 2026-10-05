@@ -2,7 +2,6 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 
-import '../../gen_l10n/app_localizations.dart';
 import '../../utils/delta_media_extractor.dart';
 import '../../utils/delta_rich_text_parser.dart';
 import '../../utils/quill_editor_extensions.dart';

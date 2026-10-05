@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:thoughtecho/config/release_highlights.dart';
-import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 import 'package:thoughtecho/models/release_highlight.dart';
 import 'package:thoughtecho/services/settings_service.dart';
 import 'package:thoughtecho/theme/app_theme.dart';

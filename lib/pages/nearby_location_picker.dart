@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../gen_l10n/app_localizations.dart';
 import '../services/location_service.dart';
 import '../services/place_search_service.dart';
 import '../theme/theme_style.dart';

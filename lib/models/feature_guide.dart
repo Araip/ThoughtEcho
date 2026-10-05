@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../gen_l10n/app_localizations.dart';
 
 /// 引导提示的预设位置偏好
 enum FeatureGuidePlacement { auto, above, below, left, right }

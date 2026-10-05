@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
 import 'package:flutter_quill_extensions/flutter_quill_extensions.dart';
 
-import '../gen_l10n/app_localizations.dart';
 import '../theme/theme_style.dart';
 import '../utils/app_logger.dart';
 import '../utils/optimized_image_loader.dart';

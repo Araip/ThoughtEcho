@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../gen_l10n/app_localizations.dart';
 
 class HitokotoWidget extends StatelessWidget {
   final Map<String, dynamic> quote;

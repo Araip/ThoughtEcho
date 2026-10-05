@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../gen_l10n/app_localizations.dart';
 
 /// APK下载服务的 Web 平台桩实现
 /// 在 Web 平台上，APK 下载功能不可用

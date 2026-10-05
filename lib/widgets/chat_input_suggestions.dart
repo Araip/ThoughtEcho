@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../gen_l10n/app_localizations.dart';
 
 /// 聊天输入建议组件
 class ChatInputSuggestions extends StatelessWidget {

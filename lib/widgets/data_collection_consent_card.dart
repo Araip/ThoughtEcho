@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 import 'package:thoughtecho/services/settings_service.dart';
 import 'package:thoughtecho/theme/theme_style.dart';
 import 'package:thoughtecho/utils/app_logger.dart';
