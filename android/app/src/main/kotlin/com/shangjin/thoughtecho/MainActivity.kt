@@ -16,6 +16,9 @@ class MainActivity : FlutterFragmentActivity() {
     private val timezoneChannel = "com.shangjin.thoughtecho/timezone"
     private val excerptIntentChannel = "com.shangjin.thoughtecho/excerpt_intent"
     private val excerptAliasName = "com.shangjin.thoughtecho.ExcerptEntryActivity"
+    private val disguiseChannel = "com.shangjin.thoughtecho/disguise"
+    private val normalAliasName = "com.shangjin.thoughtecho.LauncherEntry"
+    private val calculatorAliasName = "com.shangjin.thoughtecho.CalculatorEntry"
     private var pendingExcerptText: String? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -28,6 +31,29 @@ class MainActivity : FlutterFragmentActivity() {
                 result.success(TimeZone.getDefault().id)
             } else {
                 result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, disguiseChannel).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setDisguise" -> {
+                    val enabled = call.arguments as? Boolean
+                    if (enabled == null) {
+                        result.error("INVALID_ARGUMENT", "Missing enabled flag", null)
+                    } else {
+                        try {
+                            setDisguiseEnabled(enabled)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "setDisguise failed", e)
+                            result.error("DISGUISE_FAILED", e.message, null)
+                        }
+                    }
+                }
+
+                "isDisguiseEnabled" -> result.success(isDisguiseEnabled())
+
+                else -> result.notImplemented()
             }
         }
 
@@ -88,6 +114,32 @@ class MainActivity : FlutterFragmentActivity() {
             pendingExcerptText = text
             Log.i("MainActivity", "Captured external excerpt text (${text.length} chars)")
         }
+    }
+
+    /** 定制版：切换启动器入口，实现应用名称与图标伪装。 */
+    private fun setDisguiseEnabled(enabled: Boolean) {
+        val normal = ComponentName(this, normalAliasName)
+        val calculator = ComponentName(this, calculatorAliasName)
+        val on = PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        val off = PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+
+        packageManager.setComponentEnabledSetting(
+            normal,
+            if (enabled) off else on,
+            PackageManager.DONT_KILL_APP,
+        )
+        packageManager.setComponentEnabledSetting(
+            calculator,
+            if (enabled) on else off,
+            PackageManager.DONT_KILL_APP,
+        )
+        Log.i("MainActivity", "Disguise enabled: $enabled")
+    }
+
+    private fun isDisguiseEnabled(): Boolean {
+        val calculator = ComponentName(this, calculatorAliasName)
+        val state = packageManager.getComponentEnabledSetting(calculator)
+        return state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
     }
 
     private fun setExcerptEntryEnabled(enabled: Boolean) {

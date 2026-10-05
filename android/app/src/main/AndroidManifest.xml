@@ -30,11 +30,33 @@
               android:name="io.flutter.embedding.android.SplashScreenDrawable"
               android:resource="@drawable/launch_background"
               />
+        </activity>
+        <!-- 定制版：正常图标入口（伪装关闭时启用） -->
+        <activity-alias
+            android:name=".LauncherEntry"
+            android:exported="true"
+            android:enabled="true"
+            android:label="心迹"
+            android:icon="@mipmap/ic_launcher"
+            android:targetActivity=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-        </activity>
+        </activity-alias>
+        <!-- 定制版：伪装成「计算器」的入口（伪装开启时启用） -->
+        <activity-alias
+            android:name=".CalculatorEntry"
+            android:exported="true"
+            android:enabled="false"
+            android:label="计算器"
+            android:icon="@drawable/ic_calculator"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity-alias>
         <activity-alias
             android:name=".ExcerptEntryActivity"
             android:exported="true"
