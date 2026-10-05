@@ -366,6 +366,10 @@ class _NutstoreImportBodyState extends State<NutstoreImportBody> {
           Quote(
             content: _plain(title, body, localImages.length),
             deltaContent: _buildDelta(title, body, localImages),
+            // 关键：渲染侧（QuoteContent.build）只有当 editSource == 'fullscreen'
+            // 时才会走富文本渲染分支，否则退回纯文本、内嵌图片全部不显示。
+            // 编辑器保存时都会写这个字段，导入也必须写，否则图片永远看不到。
+            editSource: 'fullscreen',
             date: when,
             source: '坚果云/${e.display}',
             lastModified: when,

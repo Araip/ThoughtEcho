@@ -291,7 +291,10 @@ class Quote {
         poiName: json['poi_name']?.toString(),
         weather: json['weather']?.toString(),
         temperature: json['temperature']?.toString(),
-        editSource: json['edit_source']?.toString(),
+        editSource: _normalizeEditSource(
+          json['edit_source']?.toString(),
+          json['delta_content']?.toString(),
+        ),
         deltaContent: json['delta_content']?.toString(),
         dayPeriod: json['day_period']?.toString(),
         lastModified: json['last_modified']?.toString(),
@@ -476,6 +479,20 @@ class Quote {
     }
     // 缺失时生成当前 UTC 时间，而非回退到 quote.date
     return DateTime.now().toUtc().toIso8601String();
+  }
+
+  /// 归一化 editSource：老数据（WebDAV 导入、早期同步）有 delta_content 却没写
+  /// edit_source，而渲染侧（QuoteContent.build）要求 editSource == 'fullscreen' 才走
+  /// 富文本分支，否则内嵌图片/格式全部退回纯文本、看起来像「丢了」。
+  /// 这里在读取时把「有富文本但缺标记」的行补成 fullscreen，一次性兼容老库。
+  static String? _normalizeEditSource(String? editSource, String? deltaContent) {
+    if (editSource != null && editSource.trim().isNotEmpty) {
+      return editSource;
+    }
+    if (deltaContent != null && deltaContent.trim().isNotEmpty) {
+      return 'fullscreen';
+    }
+    return null;
   }
 
   // 静态key-label映射
