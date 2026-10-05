@@ -41,6 +41,7 @@ import '../widgets/note_metadata_dialogs.dart';
 import '../theme/theme_style.dart';
 import 'nearby_location_picker.dart';
 import '../utils/feature_guide_helper.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 part 'note_editor/editor_document_init.dart';
 part 'note_editor/editor_save_and_draft.dart';
