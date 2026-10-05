@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 
 /// Lottie 加载动画组件

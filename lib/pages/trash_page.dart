@@ -12,6 +12,7 @@ import '../utils/app_logger.dart';
 import '../utils/aptabase_helper.dart';
 import '../utils/time_utils.dart';
 import '../widgets/trash_quote_card.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class TrashPage extends StatefulWidget {
   const TrashPage({super.key});

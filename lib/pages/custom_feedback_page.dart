@@ -3,6 +3,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:thoughtecho/constants/app_constants.dart';
 import 'package:thoughtecho/utils/app_logger.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class CustomFeedbackPage extends StatefulWidget {
   const CustomFeedbackPage({super.key});

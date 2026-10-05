@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:thoughtecho/utils/app_logger.dart';
 import 'package:thoughtecho/utils/color_utils.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 流式文本对话框
 ///

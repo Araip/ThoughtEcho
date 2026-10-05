@@ -11,6 +11,7 @@ import '../utils/stream_file_selector.dart';
 import '../services/large_file_manager.dart' as lfm;
 import '../utils/app_logger.dart';
 import 'app_snackbar.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 统一的媒体导入对话框
 ///

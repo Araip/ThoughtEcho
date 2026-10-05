@@ -9,6 +9,7 @@ import 'package:thoughtecho/services/location_service.dart';
 import 'package:thoughtecho/services/weather_service.dart';
 import 'package:thoughtecho/utils/app_logger.dart';
 import 'package:thoughtecho/widgets/app_snackbar.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 typedef HomePromptRefresh = Future<void> Function({bool initialLoad});
 

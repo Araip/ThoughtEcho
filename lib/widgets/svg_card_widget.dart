@@ -5,6 +5,7 @@ import '../models/generated_card.dart';
 import '../utils/app_logger.dart';
 import 'app_snackbar.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// SVG卡片渲染组件
 class SVGCardWidget extends StatelessWidget {

@@ -8,6 +8,7 @@ import '../services/biometric_service.dart'; // Import BiometricService
 import '../services/database_service.dart'; // Import DatabaseService
 import '../utils/time_utils.dart'; // Import TimeUtils
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class NoteFilterSortSheet extends StatefulWidget {
   final List<NoteTag> allTags;

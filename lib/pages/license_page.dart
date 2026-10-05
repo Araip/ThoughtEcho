@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 许可证页面
 /// 显示应用使用的第三方资源许可信息

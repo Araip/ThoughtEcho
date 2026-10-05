@@ -21,6 +21,7 @@ import '../widgets/common/paper_rule_background.dart';
 import '../widgets/quote_content_widget.dart';
 import 'app_snackbar.dart';
 import 'quote_card_helpers.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 优化：使用StatefulWidget以支持双击反馈动画，数据变化通过父组件管理
 class QuoteItemWidget extends StatefulWidget {

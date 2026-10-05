@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:thoughtecho/models/release_highlight.dart';
 import 'package:thoughtecho/utils/version_utils.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 更新说明的内容登记处。
 ///

@@ -10,6 +10,7 @@ import '../utils/app_logger.dart';
 import '../utils/local_video_controller.dart';
 import '../utils/motion_photo_utils.dart';
 import '../utils/optimized_image_loader.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 bool shouldAutoReturnToStillImage(VideoPlayerValue value) {
   if (!value.isInitialized || value.isPlaying) {

@@ -11,6 +11,7 @@ import '../utils/color_utils.dart'; // Import color_utils.dart
 import '../utils/time_utils.dart';
 import '../constants/app_constants.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class LogsPage extends StatefulWidget {
   const LogsPage({super.key});

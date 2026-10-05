@@ -11,6 +11,7 @@ import '../theme/theme_style.dart';
 import '../widgets/app_empty_view.dart';
 import '../widgets/app_loading_view.dart';
 import '../widgets/app_snackbar.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 城市搜索与选择组件
 ///

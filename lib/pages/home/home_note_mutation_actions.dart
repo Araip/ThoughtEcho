@@ -9,6 +9,7 @@ import 'package:thoughtecho/theme/app_semantic_colors.dart';
 import 'package:thoughtecho/utils/app_logger.dart';
 import 'package:thoughtecho/widgets/app_snackbar.dart';
 import 'package:thoughtecho/widgets/note_list_view.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// Owns home-page note deletion and favorite mutations.
 class HomeNoteMutationActions {

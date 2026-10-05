@@ -13,6 +13,7 @@ import 'package:thoughtecho/utils/app_logger.dart';
 import 'package:thoughtecho/widgets/add_note_dialog.dart';
 import 'package:thoughtecho/widgets/app_snackbar.dart';
 import 'package:thoughtecho/widgets/note_list_view.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// Owns the add/edit routes and persistence feedback launched by the home page.
 ///

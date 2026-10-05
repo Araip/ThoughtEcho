@@ -6,6 +6,7 @@ import 'package:thoughtecho/theme/theme_style.dart';
 import 'package:thoughtecho/utils/app_logger.dart';
 import 'package:thoughtecho/widgets/app_snackbar.dart';
 import 'package:thoughtecho/widgets/data_collection_disclosure.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 数据收集开关合集卡：诊断数据与体验改进计划两个开关 + 一个共用的说明按钮。
 ///

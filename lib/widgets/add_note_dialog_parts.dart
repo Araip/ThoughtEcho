@@ -6,6 +6,7 @@ import '../models/note_tag.dart';
 import '../services/database_service.dart';
 import '../theme/theme_style.dart';
 import '../utils/icon_utils.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 只让外层边距响应键盘 inset，避免键盘动画驱动整个弹窗内容重建。
 ///

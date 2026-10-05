@@ -6,6 +6,7 @@ import '../../utils/delta_media_extractor.dart';
 import '../../utils/delta_rich_text_parser.dart';
 import '../../utils/quill_editor_extensions.dart';
 import 'collapsed_media_image.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 折叠卡片的富文本正文，用 `Text.rich` 渲染 [RichTextBlock] 序列。
 ///

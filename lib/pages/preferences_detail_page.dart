@@ -10,6 +10,7 @@ import '../services/settings_service.dart';
 import '../utils/icon_utils.dart';
 import 'calculator_disguise_page.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 二级设置页：整合常用偏好与AI快捷开关
 class PreferencesDetailPage extends StatefulWidget {

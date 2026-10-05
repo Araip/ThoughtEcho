@@ -18,6 +18,7 @@ import '../utils/string_utils.dart';
 import '../constants/app_constants.dart'; // 导入应用常量
 import '../theme/app_semantic_colors.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 part 'explore/explore_data_loading.dart';
 part 'explore/explore_time_selector.dart';

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:thoughtecho/constants/app_constants.dart';
 import 'package:thoughtecho/theme/theme_style.dart';
 import 'package:thoughtecho/widgets/app_snackbar.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 数据收集说明弹窗：Sentry 错误诊断与 Aptabase 匿名统计共用同一份说明。
 ///

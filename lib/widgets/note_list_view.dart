@@ -48,6 +48,7 @@ import 'note_list/scroll_alignment.dart';
 import 'app_snackbar.dart';
 import '../theme/app_semantic_colors.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 part 'note_list/note_list_scroll.dart';
 part 'note_list/note_list_data_stream.dart';

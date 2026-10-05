@@ -8,6 +8,7 @@ import '../services/apk_download_service.dart';
 import '../services/version_check_service.dart';
 import '../theme/theme_style.dart';
 import 'app_snackbar.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 更新按钮类型枚举
 enum UpdateButtonType {

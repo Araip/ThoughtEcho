@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/theme_style.dart';
 import '../utils/color_utils.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class AccessibleColorGrid extends StatelessWidget {
   final String? selectedColorHex;

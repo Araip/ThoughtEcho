@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class IconUtils {
   // 保留原有Material图标

@@ -12,6 +12,7 @@ import '../theme/app_semantic_colors.dart';
 import '../theme/theme_style.dart';
 import '../widgets/app_snackbar.dart';
 import 'trash_page.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 把迁移目标被拒绝的原因映射为本地化文案。
 ///

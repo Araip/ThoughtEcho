@@ -11,6 +11,7 @@ import '../widgets/app_snackbar.dart';
 import '../widgets/app_loading_view.dart';
 import '../widgets/app_empty_view.dart';
 import '../widgets/app_error_view.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class TagSettingsPage extends StatefulWidget {
   const TagSettingsPage({super.key});

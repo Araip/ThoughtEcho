@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/theme_style.dart';
 import '../utils/lottie_animation_manager.dart';
 import 'package:thoughtecho/theme/app_semantic_colors.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 增强的加载组件
 /// 使用Lottie动画提供更流畅的加载体验

@@ -38,6 +38,7 @@ import '../utils/aptabase_helper.dart';
 import '../utils/lww_utils.dart';
 import '../theme/theme_style.dart';
 import '../utils/feature_guide_helper.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

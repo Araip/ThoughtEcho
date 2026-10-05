@@ -1,4 +1,5 @@
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 主题风格的显示名与一句说明。
 ///

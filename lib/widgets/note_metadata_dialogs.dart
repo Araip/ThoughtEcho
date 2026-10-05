@@ -4,6 +4,7 @@ import 'package:thoughtecho/services/local_geocoding_service.dart';
 import 'package:thoughtecho/services/location_service.dart';
 import 'package:thoughtecho/services/weather_service.dart';
 import 'app_snackbar.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 用户在位置元数据对话框中的操作类型
 enum NoteLocationDialogAction {

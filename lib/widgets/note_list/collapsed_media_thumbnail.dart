@@ -4,6 +4,7 @@ import '../../theme/theme_style.dart';
 import '../../utils/delta_media_extractor.dart';
 import '../../utils/optimized_image_loader.dart';
 import 'collapsed_media_image.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 折叠卡片右侧的媒体缩略图。
 ///

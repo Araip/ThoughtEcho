@@ -9,6 +9,7 @@ import '../theme/theme_style.dart';
 import '../utils/app_logger.dart';
 import '../widgets/app_empty_view.dart';
 import '../widgets/app_loading_view.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 位置选择结果。
 class LocationPickerResult {

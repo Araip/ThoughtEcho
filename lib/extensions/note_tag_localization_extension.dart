@@ -1,5 +1,6 @@
 import '../models/note_tag.dart';
 import '../services/database_service.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 extension NoteTagLocalizationExtension on NoteTag {
   String localizedName(AppLocalizations l10n) {

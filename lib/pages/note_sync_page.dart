@@ -10,6 +10,7 @@ import 'package:thoughtecho/utils/app_logger.dart';
 import '../utils/aptabase_helper.dart';
 import '../widgets/app_snackbar.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class _AutoScrollText extends StatefulWidget {
   final String text;

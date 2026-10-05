@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../utils/note_list_image_profile.dart';
 import '../../utils/optimized_image_loader.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 折叠卡片里媒体图片的统一渲染实现，[CollapsedMediaThumbnail] 与
 /// [CollapsedMediaBanner] 共用。两种版式的差别只在尺寸和解码上限，加载时序、

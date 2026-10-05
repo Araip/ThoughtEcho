@@ -29,6 +29,7 @@ import 'add_note_dialog_parts.dart'; // 导入拆分的组件
 import 'app_snackbar.dart';
 import 'note_metadata_dialogs.dart';
 import '../utils/feature_guide_helper.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 // TODO(refactor): This file exceeds 2400 lines and contains redundant location/weather logic.
 // Consider extracting core business logic into a separate controller or service.

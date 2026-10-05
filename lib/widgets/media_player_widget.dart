@@ -10,6 +10,7 @@ import '../utils/lottie_animation_manager.dart';
 import '../theme/app_semantic_colors.dart';
 import 'app_snackbar.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 统一的媒体播放器组件
 /// 支持视频和音频播放，提供丰富的用户体验

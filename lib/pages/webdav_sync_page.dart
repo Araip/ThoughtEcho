@@ -12,6 +12,7 @@ import '../utils/aptabase_helper.dart';
 import '../theme/app_semantic_colors.dart';
 import '../widgets/app_snackbar.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class WebDAVSyncPage extends StatefulWidget {
   const WebDAVSyncPage({super.key});

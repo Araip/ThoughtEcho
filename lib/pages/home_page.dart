@@ -33,6 +33,7 @@ import 'home/home_note_mutation_actions.dart';
 import 'home/home_refresh_coordinator.dart';
 import 'home/home_target_navigation.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class HomePage extends StatefulWidget {
   final int initialPage; // 添加初始页面参数

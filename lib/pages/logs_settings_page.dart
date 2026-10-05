@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 import '../services/unified_log_service.dart'; // 使用统一日志服务
 import 'logs_page.dart'; // 导入日志查看页面
 import '../utils/color_utils.dart'; // 导入颜色工具

@@ -9,6 +9,7 @@ import '../../services/settings_service.dart';
 import '../../services/location_service.dart';
 import '../../theme/theme_style.dart';
 import '../app_snackbar.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 欢迎页面：应用图标、一句话定位，和唯一一个要在这一屏做的决定——语言。
 ///

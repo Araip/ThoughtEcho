@@ -4,6 +4,7 @@ import '../services/network_service.dart';
 import '../services/weather_cache_manager.dart';
 import '../models/weather_data.dart';
 import 'package:thoughtecho/utils/app_logger.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 天气服务状态枚举
 enum WeatherServiceState {

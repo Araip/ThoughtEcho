@@ -9,6 +9,7 @@ import '../utils/app_logger.dart';
 import '../utils/optimized_image_loader.dart';
 import '../widgets/media_player_widget.dart';
 import '../widgets/motion_photo_preview_page.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 全局滚动状态信号，由 NoteListView 的 NotificationListener 写入。
 /// _LazyQuillImage 通过读取此信号判断列表是否仍在 ballistic（惯性）滚动阶段，

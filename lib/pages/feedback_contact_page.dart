@@ -7,6 +7,7 @@ import 'package:thoughtecho/pages/custom_feedback_page.dart';
 import 'package:thoughtecho/services/settings_service.dart';
 import 'package:thoughtecho/widgets/app_snackbar.dart';
 import 'package:thoughtecho/widgets/data_collection_consent_card.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class FeedbackContactPage extends StatelessWidget {
   const FeedbackContactPage({super.key});

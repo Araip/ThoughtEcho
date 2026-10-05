@@ -8,6 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../theme/theme_style.dart';
 import '../../utils/theme_style_labels.dart';
 import 'onboarding_section.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 第 2 屏：外观风格 + 每日一言来源。
 ///

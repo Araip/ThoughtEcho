@@ -8,6 +8,7 @@ import '../../services/location_service.dart';
 import '../app_snackbar.dart';
 import '../../theme/theme_style.dart';
 import 'onboarding_section.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 第 3 屏：使用习惯、隐私开关，以及 AI 的说明。
 ///

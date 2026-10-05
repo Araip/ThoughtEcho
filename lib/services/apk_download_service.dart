@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../theme/theme_style.dart';
 import '../utils/app_logger.dart';
 import '../widgets/app_snackbar.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 下载状态枚举
 enum DownloadStatus {

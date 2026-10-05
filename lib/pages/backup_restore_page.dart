@@ -14,6 +14,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:thoughtecho/theme/app_semantic_colors.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 备份与还原页面
 ///

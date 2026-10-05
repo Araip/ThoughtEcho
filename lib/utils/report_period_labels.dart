@@ -1,4 +1,5 @@
 import 'report_period_utils.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 周期选择的人话说法。
 ///

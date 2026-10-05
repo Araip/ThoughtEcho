@@ -18,6 +18,7 @@ import '../constants/app_constants.dart';
 import 'home_page.dart';
 import '../utils/lottie_animation_manager.dart';
 import '../theme/theme_style.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 重构后的新用户引导页面
 ///

@@ -8,6 +8,7 @@ import '../services/api_service.dart';
 import '../services/settings_service.dart';
 import '../theme/theme_style.dart';
 import '../services/api_key_manager.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 part 'hitokoto_settings_page_layout_sections.dart';
 part 'hitokoto_settings_page_info_sections.dart';

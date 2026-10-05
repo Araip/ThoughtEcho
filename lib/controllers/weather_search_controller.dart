@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../services/location_service.dart';
 import '../services/weather_service.dart';
 import '../utils/app_logger.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 天气搜索操作结果类型
 enum WeatherSearchResultType {

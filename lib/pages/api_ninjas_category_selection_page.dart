@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 class ApiNinjasCategorySelectionPage extends StatefulWidget {
   final List<String> initialSelectedCategories;
