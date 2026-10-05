@@ -56,6 +56,7 @@ import 'pages/app_lock_gate.dart';
 import 'widgets/quote_content_widget.dart'; // 用于缓存管理
 import 'widgets/app_snackbar.dart';
 import 'package:thoughtecho/gen_l10n/app_localizations.dart';
+import 'package:workmanager/workmanager.dart';
 
 part 'pages/emergency_pages.dart';
 

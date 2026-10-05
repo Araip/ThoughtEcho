@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import '../utils/http_response.dart';
 import '../utils/app_logger.dart';
 import '../utils/sentry_network_tracing.dart';
+import '../models/multi_ai_settings.dart';
+import '../models/ai_provider_settings.dart';
+import '../models/ai_settings.dart';
 
 /// 统一的网络服务管理器
 /// 整合所有网络请求功能，提供统一的接口

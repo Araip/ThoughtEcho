@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/feature_guide.dart';
 import '../services/feature_guide_service.dart';
+import '../widgets/feature_guide_popover.dart';
 
 /// 功能引导助手类
 /// 提供简单的 API 来显示功能引导提示

@@ -7,6 +7,7 @@ import '../utils/app_logger.dart';
 import '../utils/http_response.dart';
 import 'api_key_manager.dart';
 import 'package:thoughtecho/gen_l10n/app_localizations.dart';
+import '../services/api_key_manager.dart';
 
 part 'api_service_daily_quote_fallback.dart';
 part 'api_service_daily_quote_remote.dart';

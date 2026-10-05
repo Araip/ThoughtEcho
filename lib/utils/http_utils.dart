@@ -6,6 +6,7 @@ import 'package:thoughtecho/utils/sentry_network_tracing.dart';
 import 'http_response.dart';
 import 'package:thoughtecho/utils/app_logger.dart';
 import 'package:flutter/foundation.dart';
+import 'dio_network_utils.dart';
 
 class HttpUtils {
   // 单例Dio实例

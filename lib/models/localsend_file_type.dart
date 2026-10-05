@@ -1,3 +1,4 @@
+import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 
 /// 文件类型枚举（UI 文案通过 l10n 获取）
 enum FileType {
