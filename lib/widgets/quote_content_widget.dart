@@ -1031,7 +1031,7 @@ class QuoteContent extends StatelessWidget {
             final plan = layout.plan;
             final double thumbnailSize = layout.thumbnailSize;
             final double boxHeight =
-                plan.height.clamp(0.0, collapsedLimit);
+                plan.height.clamp(0.0, _collapsedLimit);
 
             // 纯媒体笔记（摘掉媒体后一个字都不剩）连正文和间距一起省掉。
             final bool hasTextContent = !plan.isEmpty && boxHeight > 0;
@@ -1165,12 +1165,12 @@ class QuoteContent extends StatelessWidget {
       collapsedMaxLines = collapsedPlainTextMaxLines(
         style: effectiveStyle,
         textScaler: textScaler,
-        limit: collapsedLimit,
+        limit: _collapsedLimit,
       );
       wholeLines = collapsedPlainTextWholeLines(
         style: effectiveStyle,
         textScaler: textScaler,
-        limit: collapsedLimit,
+        limit: _collapsedLimit,
       );
     }
     final bool useEllipsis = clampToCollapsedBox && wholeLines != null;
@@ -1189,7 +1189,7 @@ class QuoteContent extends StatelessWidget {
     if (clampToCollapsedBox) {
       plainText = _CollapsedContentWrapper(
         key: collapsedWrapperKey,
-        maxHeight: collapsedLimit,
+        maxHeight: _collapsedLimit,
         child: plainText,
       );
     }

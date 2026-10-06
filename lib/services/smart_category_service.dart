@@ -122,7 +122,7 @@ class SmartCategoryService {
     // 3. 逐条匹配，命中最高分簇即打标签。
     int ok = 0;
     for (final Quote q in pending) {
-      final String body = (q.content ?? '').trim().toLowerCase();
+      final String body = q.content.trim().toLowerCase();
       if (body.isEmpty) continue;
 
       String? bestTagId;

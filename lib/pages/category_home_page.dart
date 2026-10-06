@@ -489,7 +489,7 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
       }
       quotes = merged.values.toList()
         ..sort(
-          (Quote a, Quote b) => (b.date ?? '').compareTo(a.date ?? ''),
+          (Quote a, Quote b) => b.date.compareTo(a.date),
         );
       // 定制版：「全部便签」只显示**未分类**的便签。已分到任何分类/标签
       // （例如“C类日常”）的便签不再出现，这样一看就知道还剩多少没分类。
