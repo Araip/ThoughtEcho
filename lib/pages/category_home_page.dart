@@ -15,7 +15,12 @@ import 'note_full_editor_page.dart';
 /// 「全部便签」只显示**未分类**的便签，方便知道还剩多少没有分类；
 /// 支持一键本地「智能分类」（关键词规则，无需联网）。
 class CategoryHomePage extends StatefulWidget {
-  const CategoryHomePage({super.key});
+  const CategoryHomePage({super.key, this.refreshToken = 0});
+
+  /// 定制版：本页常驻在 IndexedStack 里，切 tab 不会重建，也就不会重新统计。
+  /// 首页每次切回本 tab 时递增该值，用于强制重新加载分类条数，
+  /// 避免“明明把便签移进分类，外层数字还是 0”。
+  final int refreshToken;
 
   @override
   State<CategoryHomePage> createState() => _CategoryHomePageState();
@@ -44,6 +49,15 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCategories();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant CategoryHomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 定制版：每次切回分类 tab 都重新统计一遍，保证外层数字与详情页一致。
+    if (widget.refreshToken != oldWidget.refreshToken) {
+      _loadCategories();
+    }
   }
 
   Future<void> _loadCategories() async {
@@ -425,7 +439,7 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
       final Map<String, Quote> merged = <String, Quote>{};
       final List<Quote> byCategory = await db.getUserQuotes(
         categoryId: cid,
-        limit: 500,
+        limit: 5000,
       );
       for (final Quote q in byCategory) {
         final String? id = q.id;
@@ -434,7 +448,7 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
       if (cid != null && cid.isNotEmpty) {
         final List<Quote> byTag = await db.getUserQuotes(
           tagIds: <String>[cid],
-          limit: 500,
+          limit: 5000,
         );
         for (final Quote q in byTag) {
           final String? id = q.id;
@@ -456,7 +470,7 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
         } else {
           final List<Quote> byTag = await db.getUserQuotes(
             tagIds: <String>[_filterTagId!],
-            limit: 500,
+            limit: 5000,
           );
           final Map<String, Quote> tagMerged = <String, Quote>{};
           for (final Quote q in byTag) {

@@ -519,17 +519,44 @@ mixin _DatabaseQueryMixin on _DatabaseServiceBase {
   /// 直接用 SQL 聚合计数，避免调用方把整张表的行捞回内存再 `.length`。
   @override
   Future<int> getNotesCountByCategory(String categoryId) async {
+    final String hiddenId = _DatabaseServiceBase.hiddenTagId;
     if (kIsWeb) {
-      return _memoryStore
-          .where((quote) => quote.categoryId == categoryId && !quote.isDeleted)
-          .length;
+      final Set<String> ids = <String>{};
+      for (final Quote q in _memoryStore) {
+        if (q.isDeleted) continue;
+        if (q.tagIds.contains(hiddenId)) continue;
+        if (q.categoryId == categoryId || q.tagIds.contains(categoryId)) {
+          if (q.id != null) ids.add(q.id!);
+        }
+      }
+      return ids.length;
     }
 
     final db = await safeDatabase;
+    // 定制版修复：外层分类计数要与详情页口径一致——同一分类既可能落在
+    // quotes.category_id（单值），也可能落在 quote_tags（多对多），两者取并集、
+    // 按 id 去重，并同样排除「已删除」与「隐藏」笔记；否则会出现
+    // “外面显示 N 条、点进去 M 条”的错位。
     final result = await db.rawQuery(
-      'SELECT COUNT(*) as count FROM quotes '
-      'WHERE category_id = ? AND (is_deleted = 0 OR is_deleted IS NULL)',
-      [categoryId],
+      '''
+      SELECT COUNT(*) AS count FROM (
+        SELECT q.id FROM quotes q
+         WHERE q.category_id = ?
+           AND (q.is_deleted = 0 OR q.is_deleted IS NULL)
+           AND NOT EXISTS (
+             SELECT 1 FROM quote_tags h WHERE h.quote_id = q.id AND h.tag_id = ?
+           )
+        UNION
+        SELECT q.id FROM quote_tags qt
+         JOIN quotes q ON q.id = qt.quote_id
+         WHERE qt.tag_id = ?
+           AND (q.is_deleted = 0 OR q.is_deleted IS NULL)
+           AND NOT EXISTS (
+             SELECT 1 FROM quote_tags h WHERE h.quote_id = q.id AND h.tag_id = ?
+           )
+      ) t
+      ''',
+      [categoryId, hiddenId, categoryId, hiddenId],
     );
     return (result.first['count'] as int?) ?? 0;
   }

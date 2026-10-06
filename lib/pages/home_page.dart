@@ -131,6 +131,9 @@ class HomeLocationWeatherDisplay extends StatelessWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late final HomePageController _pageController;
 
+  /// 定制版：每次切回分类 tab 递增，驱动 CategoryHomePage 重新统计条数。
+  int _categoryRefreshToken = 0;
+
   // 新增：NoteListView的全局Key
   final GlobalKey<NoteListViewState> _noteListViewKey =
       GlobalKey<NoteListViewState>();
@@ -548,6 +551,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       _targetNavigation.onNotesReady();
     }
 
+    // 定制版：切回分类页（第二个 tab）时强制重新统计分类条数。
+    // 该页常驻在 IndexedStack 中不会重建，否则会一直显示打开 App 时的旧数字。
+    if (_pageController.currentIndex == 1) {
+      setState(() => _categoryRefreshToken++);
+    }
+
     _triggerGuideForCurrentIndex();
   }
 
@@ -901,7 +910,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               },
             ),
             // 便签分类页（第二个 tab）
-            const CategoryHomePage(),
+            CategoryHomePage(refreshToken: _categoryRefreshToken),
             // 探索页
             const ExplorePage(),
             // 设置页
