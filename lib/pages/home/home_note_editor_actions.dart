@@ -115,24 +115,8 @@ class HomeNoteEditorActions {
     if (!_active) return;
     releaseNoteSearchFocus();
     FocusScope.of(context).unfocus();
-    if (quote.editSource == 'fullscreen') {
-      _openExistingFullscreenEditor(quote);
-      return;
-    }
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-      requestFocus: false,
-      builder: (sheetContext) => AddNoteDialog(
-        initialQuote: quote,
-        tags: readTags(),
-        onSave: (updatedQuote) => _save(updatedQuote, isEditing: true),
-      ),
-    ).whenComplete(() {
-      if (_active) releaseNoteSearchFocus();
-    });
+    // 定制版：单击便签直接进入全屏编辑器，不再走底部弹窗。
+    _openExistingFullscreenEditor(quote);
   }
 
   Future<void> _save(Quote quote, {required bool isEditing}) async {

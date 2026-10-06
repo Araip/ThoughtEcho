@@ -142,6 +142,9 @@ class NoteListViewState extends State<NoteListView>
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode(); // 添加焦点节点管理
   final ScrollController _scrollController = ScrollController(); // 添加滚动控制器
+  // 定制版：搜索框随滚动方向显隐（下滑隐藏、上滑出现）。
+  bool _searchBarVisible = true;
+  double _searchBarLastScrollPixels = 0;
   final Map<String, bool> _expandedItems = {};
   final Map<String, ValueNotifier<bool>> _expansionNotifiers = {};
   String? _positioningQuoteId;
@@ -646,6 +649,12 @@ class NoteListViewState extends State<NoteListView>
   void unfocusSearchField() {
     if (!_searchFocusNode.hasFocus) return;
     _searchFocusNode.unfocus(disposition: UnfocusDisposition.scope);
+  }
+
+  /// 定制版：切换搜索框显隐（滚动方向驱动）。
+  void _setSearchBarVisible(bool visible) {
+    if (!mounted || _searchBarVisible == visible) return;
+    setState(() => _searchBarVisible = visible);
   }
 
   /// 滚动监听器，用于检测用户滑动状态

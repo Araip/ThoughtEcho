@@ -920,9 +920,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           child: GestureDetector(
             onLongPressStart: (_) => _onFABLongPress(),
             child: Container(
+              clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 // 定制版：中间的 + 号做成圆角矩形。
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
                 boxShadow: shape.accentShadow,
               ),
               child: FloatingActionButton(
@@ -936,7 +937,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     .floatingActionButtonTheme.foregroundColor, // 使用主题定义的颜色
                 shape: RoundedRectangleBorder(
                   // 定制版：中间的 + 号做成明显的圆角矩形，不再接近圆形。
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.add, size: 28),
               ),
@@ -984,7 +985,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   Icons.book,
                   color: theme.colorScheme.primary,
                 ),
-                label: '记录',
+                label: '首页',
               ),
               NavigationDestination(
                 icon: const Icon(Icons.category_outlined),

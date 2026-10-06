@@ -55,21 +55,22 @@ extension _NoteListItemsExtension on NoteListViewState {
             child: Column(
               children: [
                 // 搜索框 - 现代圆角样式，筛选按钮内嵌到右侧
-                // 使用 AnimatedOpacity 保持布局树稳定，避免 ListView 滚动跳动
-                AnimatedOpacity(
+                // 定制版：随列表滚动方向显隐（下滑隐藏、上滑出现）。
+                // AnimatedSwitcher 让收起/展开时高度平滑过渡，避免滚动跳动。
+                AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  opacity: _isExportMode ? 0.0 : 1.0,
-                  child: IgnorePointer(
-                    ignoring: _isExportMode,
-                    child: Container(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        topPadding + 8.0,
-                        horizontalPadding,
-                        0,
-                      ),
-                      child: TextField(
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: _searchBarVisible && !_isExportMode
+                      ? Container(
+                          key: const ValueKey('noteSearchBar'),
+                          padding: EdgeInsets.fromLTRB(
+                            horizontalPadding,
+                            topPadding + 8.0,
+                            horizontalPadding,
+                            0,
+                          ),
+                          child: TextField(
                         controller: _searchController,
                         focusNode: _searchFocusNode,
                         onChanged: _onSearchChanged,
@@ -181,8 +182,12 @@ extension _NoteListItemsExtension on NoteListViewState {
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                    )
+                    : const SizedBox(
+                        key: ValueKey('noteSearchBarHidden'),
+                        width: double.infinity,
+                        height: 0,
+                      ),
                 ),
 
                 // 筛选条件展示区域
@@ -471,6 +476,15 @@ extension _NoteListItemsExtension on NoteListViewState {
           _startScrollSessionPerfCapture(notification.metrics);
         } else if (notification is ScrollUpdateNotification) {
           _recordScrollSessionUpdate(notification.metrics);
+          // 定制版：下滑（内容向上走）隐藏搜索框，上滑（内容向下走）显示
+          final delta =
+              notification.metrics.pixels - _searchBarLastScrollPixels;
+          _searchBarLastScrollPixels = notification.metrics.pixels;
+          if (delta > 3) {
+            _setSearchBarVisible(false);
+          } else if (delta < -3) {
+            _setSearchBarVisible(true);
+          }
         } else if (notification is ScrollEndNotification) {
           isListDragActive.value = false;
           _scheduleScrollSessionPerfFinalize(notification.metrics);
