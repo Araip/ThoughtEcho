@@ -518,6 +518,8 @@ class QuoteContent extends StatelessWidget {
         maxWidth: maxWidth,
         mediaStyle: mediaStyle,
         prioritizeBoldContent: prioritizeBoldContent,
+        // 静态测量路径没有紧凑概念，恒用默认盒高。
+        collapsedLimit: collapsedContentMaxHeight,
       );
       if (layout != null) return layout.plan.truncated;
     }
@@ -826,6 +828,9 @@ class QuoteContent extends StatelessWidget {
     required double maxWidth,
     required String mediaStyle,
     required bool prioritizeBoldContent,
+    // 定制版：折叠盒高预算由调用方传入。实例渲染传 _collapsedLimit
+    // （紧凑模式 76，普通 160）；静态预热没有紧凑概念，传默认 160。
+    required double collapsedLimit,
   }) {
     final bool stripMedia = mediaStyle != NoteCardMediaStyle.inline;
     final media = stripMedia
@@ -869,7 +874,7 @@ class QuoteContent extends StatelessWidget {
         blocks: blocks,
         baseStyle: baseStyle,
         maxWidth: width,
-        limit: _collapsedLimit,
+        limit: collapsedLimit,
         showMedia: !stripMedia,
         boldWeight: boldWeight,
         textDirection: textDirection,
@@ -953,6 +958,8 @@ class QuoteContent extends StatelessWidget {
       maxWidth: maxWidth,
       mediaStyle: mediaStyle,
       prioritizeBoldContent: prioritizeBoldContent,
+      // 预热路径同样没有紧凑概念，恒用默认盒高，保持与渲染键一致。
+      collapsedLimit: collapsedContentMaxHeight,
     );
     // `thumbnailInset > 0` 和 build 里决定画不画缩略图的是同一个判据。
     if (layout == null || layout.thumbnailInset <= 0) return null;
@@ -997,6 +1004,8 @@ class QuoteContent extends StatelessWidget {
               maxWidth: constraints.maxWidth,
               mediaStyle: mediaStyle,
               prioritizeBoldContent: prioritizeBoldContent,
+              // 实例渲染路径：紧凑模式用更矮的盒高，普通模式用默认 160。
+              collapsedLimit: _collapsedLimit,
             );
             if (layout == null) {
               // delta 解不出来（损坏、导入了别家的格式、同步冲突写坏了）时**退回纯
@@ -1022,7 +1031,7 @@ class QuoteContent extends StatelessWidget {
             final plan = layout.plan;
             final double thumbnailSize = layout.thumbnailSize;
             final double boxHeight =
-                plan.height.clamp(0.0, _collapsedLimit);
+                plan.height.clamp(0.0, collapsedLimit);
 
             // 纯媒体笔记（摘掉媒体后一个字都不剩）连正文和间距一起省掉。
             final bool hasTextContent = !plan.isEmpty && boxHeight > 0;
@@ -1156,12 +1165,12 @@ class QuoteContent extends StatelessWidget {
       collapsedMaxLines = collapsedPlainTextMaxLines(
         style: effectiveStyle,
         textScaler: textScaler,
-        limit: _collapsedLimit,
+        limit: collapsedLimit,
       );
       wholeLines = collapsedPlainTextWholeLines(
         style: effectiveStyle,
         textScaler: textScaler,
-        limit: _collapsedLimit,
+        limit: collapsedLimit,
       );
     }
     final bool useEllipsis = clampToCollapsedBox && wholeLines != null;
@@ -1180,7 +1189,7 @@ class QuoteContent extends StatelessWidget {
     if (clampToCollapsedBox) {
       plainText = _CollapsedContentWrapper(
         key: collapsedWrapperKey,
-        maxHeight: _collapsedLimit,
+        maxHeight: collapsedLimit,
         child: plainText,
       );
     }
