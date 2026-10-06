@@ -4,19 +4,19 @@ import 'dart:io';
 /// 为 LocationService 提供一致的语言映射
 class I18nLanguage {
   /// 应用支持的语言集合
-  static const supported = {'zh', 'en', 'ja', 'ko', 'fr'};
+  static const supported = {'zh'};
 
   /// 从 locale 字符串提取基础语言代码
   /// 例如 'zh_CN' -> 'zh', 'en-US' -> 'en', 'fr_FR' -> 'fr'
   static String base(String? localeCode) {
-    if (localeCode == null || localeCode.trim().isEmpty) return 'en';
+    if (localeCode == null || localeCode.trim().isEmpty) return 'zh';
     return localeCode.toLowerCase().split(RegExp(r'[_-]')).first;
   }
 
-  /// 返回应用支持的语言代码，不支持的回退到 'en'
+  /// 返回应用支持的语言代码，定制版只保留简体中文。
   static String appLanguage(String? localeCode) {
     final b = base(localeCode);
-    return supported.contains(b) ? b : 'en';
+    return supported.contains(b) ? b : 'zh';
   }
 
   /// 优先使用传入的 localeCode，否则回退到系统语言
@@ -27,7 +27,7 @@ class I18nLanguage {
     try {
       return appLanguage(Platform.localeName);
     } catch (_) {
-      return 'en';
+      return 'zh';
     }
   }
 

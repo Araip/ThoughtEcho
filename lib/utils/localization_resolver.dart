@@ -9,8 +9,8 @@ import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 /// 枚举 key）同样要跟着用户的语言走——否则界面显示「多云」，喂给 AI 的却是
 /// `partly_cloudy`，模型回信时只能照抄那个英文 key。
 ///
-/// [localeCode] 传 `SettingsService.localeCode`；为空表示跟随系统。不在支持列表里
-/// 的语言退回英文，和 `MaterialApp` 的 `supportedLocales` 协商结果一致。
+/// 定制版只保留简体中文，因此任何入参最终都解析到中文资源；
+/// [localeCode] 仅为兼容旧调用保留。
 AppLocalizations resolveAppLocalizations(String? localeCode) {
   // 设置里存的可能是 'zh_CN' 这种带区域的写法（`SettingsService.setLocale`
   // 接受它），而 supportedLocales 比的是纯语言子标签。不先归一化，zh_CN 的
@@ -28,6 +28,6 @@ AppLocalizations resolveAppLocalizations(String? localeCode) {
       .toSet();
 
   return lookupAppLocalizations(
-    Locale(supported.contains(languageCode) ? languageCode : 'en'),
+    Locale(supported.contains(languageCode) ? languageCode : 'zh'),
   );
 }

@@ -16,7 +16,6 @@ import '../controllers/search_controller.dart'; // 导入搜索控制器
 import '../models/quote_model.dart';
 import '../widgets/note_list_view.dart';
 import 'explore_page.dart';
-import 'release_notes_page.dart';
 import 'settings_page.dart';
 import 'note_full_editor_page.dart';
 import 'category_home_page.dart';
@@ -272,11 +271,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
       // 检查是否应该显示周年庆典动画（在其他检查之后，优先级最低）
       await _checkAndShowAnniversaryAnimation();
-
-      // 检查这次升级有没有该给用户看的更新内容（含 3.7.0 的崩溃诊断说明）
-      if (mounted) {
-        await ReleaseNotesPage.checkAndShow(context);
-      }
     });
 
     // 根据初始页面尝试触发对应的功能引导

@@ -363,20 +363,8 @@ class LocalGeocodingService {
   /// 根据语言代码构建系统地理编码使用的 locale identifier
   /// 格式: languageCode_countryCode (如 'zh_CN', 'en_US', 'ja_JP')
   static String _buildLocaleIdentifier(String? localeCode) {
-    final lang = (localeCode ?? '').toLowerCase().split(RegExp(r'[_-]')).first;
-    switch (lang) {
-      case 'zh':
-        return 'zh_CN';
-      case 'ja':
-        return 'ja_JP';
-      case 'ko':
-        return 'ko_KR';
-      case 'fr':
-        return 'fr_FR';
-      case 'en':
-      default:
-        return 'en_US';
-    }
+    // 定制版界面只保留简体中文，地理编码也统一按中文请求。
+    return 'zh_CN';
   }
 
   /// 使用系统提供的Placemark格式化地址

@@ -25,8 +25,6 @@ import 'tag_settings_page.dart';
 import 'license_page.dart' as license;
 import 'preferences_detail_page.dart';
 import 'user_guide_page.dart';
-import 'feedback_contact_page.dart';
-import 'release_notes_page.dart';
 import 'storage_management_page.dart';
 import '../widgets/anniversary_animation_overlay.dart';
 import '../widgets/anniversary_badges.dart';
@@ -53,6 +51,13 @@ class SettingsPageState extends State<SettingsPage> {
   final String _projectUrl = 'https://github.com/Shangjin-Xiao/ThoughtEcho';
   final String _websiteUrl = 'https://note.shangjinyun.cn/';
   final String _privacyUrl = AppConstants.privacyPolicyUrl;
+
+  /// 定制版「开发者与软件介绍」里展示的信息。
+  ///
+  /// 头像是打包进资源的 QQ 头像（assets/dev_avatar.jpg）。QQ 昵称接口需要
+  /// 登录态才能取，客户端拿不到，这里用账号名占位，改一行即可替换。
+  static const String _developerName = 'Araip';
+  static const String _developerQq = '875134472';
   // --- 链接地址结束 ---
   final TextEditingController _locationController = TextEditingController();
 
@@ -514,20 +519,15 @@ class SettingsPageState extends State<SettingsPage> {
             margin: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                // --- 修改：关于标题 ListTile，点击弹出包含链接的对话框 ---
+                // --- 开发者与软件介绍（定制版） ---
                 ListTile(
-                  title: Text(l10n.settingsAbout),
+                  title: const Text('开发者与软件介绍'),
                   leading: const Icon(Icons.info_outline),
-                  trailing: const Icon(Icons.chevron_right), // 添加箭头指示可点击
+                  trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // 使用自定义关于对话框替代 showAboutDialog，以避免系统自动添加 "查看许可证" 按钮
                     showDialog(
                       context: context,
                       builder: (dialogContext) => AlertDialog(
-                        // **不给 title。** 「关于 心迹 (ThoughtEcho)」在对话框那点
-                        // 宽度里必然折行，折出来的第二行是孤零零一个
-                        // 「(ThoughtEcho)」压在图标上方。应用名本来就该在图标
-                        // 底下——那是关于页的读法，也不用再重复一遍「关于」。
                         contentPadding: const EdgeInsets.only(top: 28),
                         content: SizedBox(
                           width: double.maxFinite,
@@ -536,60 +536,99 @@ class SettingsPageState extends State<SettingsPage> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
+                                // 开发者头像（QQ 头像）。沿用旧 logo 的彩蛋：
+                                // 连点三次切换开发者模式。
                                 GestureDetector(
                                   onTap: _handleLogoTap,
-                                  child: Image.asset(
-                                    'assets/icon.png',
-                                    width: 64,
-                                    height: 64,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        width: 64,
-                                        height: 64,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          borderRadius: BorderRadius.circular(
-                                            AppShapeTokens.of(context)
-                                                .buttonRadius,
-                                          ),
+                                  child: Center(
+                                    child: Container(
+                                      width: 84,
+                                      height: 84,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: theme.colorScheme.primary
+                                              .withAlpha((0.35 * 255).round()),
+                                          width: 2,
                                         ),
-                                        // 前景取 onPrimary 而不是白：动态取色下
-                                        // primary 可能是浅色，白图标会糊在上面。
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.apps,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onPrimary,
-                                            size: 36,
-                                          ),
+                                      ),
+                                      child: ClipOval(
+                                        child: Image.asset(
+                                          'assets/dev_avatar.jpg',
+                                          width: 84,
+                                          height: 84,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            return Container(
+                                              width: 84,
+                                              height: 84,
+                                              color: theme.colorScheme.primary,
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.person,
+                                                  color: theme
+                                                      .colorScheme.onPrimary,
+                                                  size: 44,
+                                                ),
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      );
-                                    },
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  l10n.appTitle,
+                                  _developerName,
                                   textAlign: TextAlign.center,
                                   style: theme.textTheme.titleLarge,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  l10n.settingsAboutSlogan,
+                                  'QQ：$_developerQq',
                                   textAlign: TextAlign.center,
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                                 const SizedBox(height: 20),
-                                // 五个入口过去是五颗等宽的实心主按钮，从上到下
-                                // 摞成一堵棕色的墙：全都长得像「主操作」，等于
-                                // 一个都不是，对话框也被撑得比屏幕还高。
-                                // 它们本来就是导航项，按导航项排——一行一条，
-                                // 图标 + 文字 + 去向指示。
+                                Divider(
+                                  height: 1,
+                                  color: theme.colorScheme.outlineVariant,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    16,
+                                    20,
+                                    4,
+                                  ),
+                                  child: Text(
+                                    '软件介绍',
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    20,
+                                    0,
+                                    20,
+                                    16,
+                                  ),
+                                  child: Text(
+                                    '心迹（ThoughtEcho）是一款本地优先的随手记与心情便签应用：'
+                                    '支持富文本笔记、标签与分类整理、每日一言、'
+                                    '全文搜索与回收站，可选 WebDAV 云同步；'
+                                    '数据默认保存在本机，由你自己掌控。',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      height: 1.6,
+                                    ),
+                                  ),
+                                ),
                                 Divider(
                                   height: 1,
                                   color: theme.colorScheme.outlineVariant,
@@ -660,66 +699,7 @@ class SettingsPageState extends State<SettingsPage> {
                     );
                   },
                 ),
-                // --- 关于标题 ListTile 结束 ---
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Divider(
-                    color: theme.colorScheme.outline.withAlpha(
-                      (0.2 * 255).round(),
-                    ),
-                  ),
-                ),
-                ListTile(
-                  title: Text(l10n.feedbackAndContact),
-                  leading: const Icon(Icons.feedback_outlined),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const FeedbackContactPage(),
-                      ),
-                    );
-                  },
-                ),
-
-                // 添加分隔线
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Divider(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withAlpha((0.2 * 255).round()),
-                  ),
-                ),
-
-                // 更新内容 ListTile：升级时自动弹过一次，这里是回头再看的入口
-                ListTile(
-                  title: Text(l10n.settingsReleaseNotes),
-                  subtitle: Text(l10n.settingsReleaseNotesDesc),
-                  leading: const Icon(Icons.auto_stories_outlined),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const ReleaseNotesPage.currentRelease(),
-                      ),
-                    );
-                  },
-                ),
-
-                // 添加分隔线
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Divider(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withAlpha((0.2 * 255).round()),
-                  ),
-                ),
+                // --- 开发者与软件介绍结束 ---
 
                 // 「检查更新」入口已移除（定制版）
               ],
@@ -1108,105 +1088,14 @@ class SettingsPageState extends State<SettingsPage> {
 
   // 相关设置已移动到“偏好设置”二级页面
 
-  // 构建语言设置项
+  // 构建语言设置项（定制版：界面只保留简体中文，无可选项）
   Widget _buildLanguageItem(BuildContext context) {
-    final settingsService = Provider.of<SettingsService>(context);
-    final locationService = Provider.of<LocationService>(
-      context,
-      listen: false,
-    );
-    final currentLocale = settingsService.localeCode;
     final l10n = AppLocalizations.of(context);
-
-    String getLanguageName(String? code) {
-      switch (code) {
-        case 'zh':
-          return l10n.languageChinese;
-        case 'en':
-          return l10n.languageEnglish;
-        case 'ja':
-          return l10n.languageJapanese;
-        case 'ko':
-          return l10n.languageKorean;
-        case 'es':
-          return l10n.languageSpanish;
-        case 'fr':
-          return l10n.languageFrench;
-        case 'de':
-          return l10n.languageGerman;
-        default:
-          return l10n.languageFollowSystem;
-      }
-    }
 
     return ListTile(
       title: Text(l10n.languageSettings),
-      subtitle: Text(getLanguageName(currentLocale)),
+      subtitle: Text(l10n.languageChinese),
       leading: const Icon(Icons.translate),
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: Text(l10n.selectLanguage),
-            content: StatefulBuilder(
-              builder: (context, setState) {
-                return RadioGroup<String?>(
-                  groupValue: currentLocale,
-                  onChanged: (value) async {
-                    await settingsService.setLocale(value);
-                    // 同步更新位置服务的语言设置
-                    locationService.currentLocaleCode = value;
-                    if (dialogContext.mounted) Navigator.pop(dialogContext);
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RadioListTile<String?>(
-                        title: Text(l10n.languageFollowSystem),
-                        value: null,
-                      ),
-                      RadioListTile<String?>(
-                        title: Text(l10n.languageChinese),
-                        value: 'zh',
-                      ),
-                      RadioListTile<String?>(
-                        title: Text(l10n.languageEnglish),
-                        value: 'en',
-                      ),
-                      RadioListTile<String?>(
-                        title: Text(l10n.languageJapanese),
-                        value: 'ja',
-                      ),
-                      RadioListTile<String?>(
-                        title: Text(l10n.languageKorean),
-                        value: 'ko',
-                      ),
-                      RadioListTile<String?>(
-                        title: Text(l10n.languageSpanish),
-                        value: 'es',
-                      ),
-                      RadioListTile<String?>(
-                        title: Text(l10n.languageFrench),
-                        value: 'fr',
-                      ),
-                      RadioListTile<String?>(
-                        title: Text(l10n.languageGerman),
-                        value: 'de',
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text(l10n.cancel),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 

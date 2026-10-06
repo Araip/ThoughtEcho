@@ -373,7 +373,7 @@ class SettingsService extends ChangeNotifier {
   /// 它为 true 说明用户见过 3.7.0 才有的崩溃诊断披露，即至少用过 3.7.0；
   /// 为 false 则按比任何登记条目都旧处理，把内容全部补给他。
   ///
-  /// 推导只发生一次——[ReleaseNotesPage.checkAndShow] 看完就会落盘真实版本号。
+  /// 推导只发生一次——更新说明检查 看完就会落盘真实版本号。
   /// 边界情况是装了 3.7.0 之后从没打开过首页的用户会多看一句诊断说明，
   /// 相比漏掉隐私告知，这个方向的误差是可接受的那一边。
   String get lastSeenReleaseVersion {
@@ -388,10 +388,10 @@ class SettingsService extends ChangeNotifier {
   /// 但要留下日志，否则「每次启动都弹」会查不到原因。
   ///
   /// **异常也要按写失败处理**：`MMKVService.setString` 重试三次后是 `rethrow`，
-  /// 而这个方法挂在首页启动路径上（[ReleaseNotesPage.checkAndShow]），
+  /// 而这个方法挂在首页启动路径上（更新说明检查），
   /// 让它抛出去等于用一次记账失败换掉整个启动检查。
   Future<void> setLastSeenReleaseVersion(String version) async {
-    // 每次冷启动都会调一次（见 ReleaseNotesPage.checkAndShow），值没变就别写、
+    // 每次冷启动都会调一次（见更新说明检查），值没变就别写、
     // 更别通知——否则每次启动都要白白重建一遍所有监听者。
     if (_mmkv.getString(_lastSeenReleaseVersionKey) == version) return;
 

@@ -659,9 +659,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     final hasCompletedOnboarding = context.select<SettingsService, bool>(
       (s) => s.hasCompletedOnboarding(),
     );
-    final localeCode = context.select<SettingsService, String?>(
-      (s) => s.localeCode,
-    );
     final sentryEnabled = context.select<SettingsService, bool>(
       (s) => s.sentryEnabled,
     );
@@ -669,7 +666,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       (s) => s.appSettings.defaultStartPage,
     );
     final appTheme = Provider.of<AppTheme>(context);
-    final Locale? locale = localeCode != null ? Locale(localeCode) : null;
+    // 定制版：界面只保留简体中文，不再跟随系统语言或历史设置。
+    const Locale locale = Locale('zh');
 
     // 使用 DynamicColorBuilder 以支持动态取色功能
     return DynamicColorBuilder(

@@ -196,6 +196,7 @@ flutter:
   assets:
     - assets/lottie/
     - assets/svg/
+    - assets/dev_avatar.jpg
     - assets/icon.png
     - assets/icon_ios_full.png
     - assets/icon_ios_large.png

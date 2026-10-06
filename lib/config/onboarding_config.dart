@@ -15,25 +15,10 @@ import 'package:thoughtecho/gen_l10n/app_localizations.dart';
 class OnboardingConfig {
   static const Map<String, String> _nativeLanguageLabels = {
     'zh': '简体中文',
-    'en': 'English',
-    'ja': '日本語',
-    'ko': '한국어',
-    'es': 'Español',
-    'fr': 'Français',
-    'de': 'Deutsch',
   };
 
-  /// 语言选项。空字符串表示跟随系统，排在首位。
-  static const List<String> languageCodes = [
-    '',
-    'zh',
-    'en',
-    'ja',
-    'ko',
-    'es',
-    'fr',
-    'de',
-  ];
+  /// 语言选项。定制版只保留简体中文。
+  static const List<String> languageCodes = ['zh'];
 
   static String nativeLanguageLabel(String languageCode) {
     return _nativeLanguageLabels[languageCode] ?? languageCode;

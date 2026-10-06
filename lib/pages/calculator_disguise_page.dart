@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../services/settings_service.dart';
 import 'nutstore_import_page.dart';
 
-/// 定制版：伪装计算器页（仿 Google 计算器）
+/// 定制版：伪装计算器页（仿 Google 计算器 · 深夜模式）
 ///
 /// 外观与行为是一个真正可用的计算器（支持表达式、三角函数、对数、
 /// 复数 i 等），用于隐藏「隐私与安全」入口。
@@ -30,7 +30,7 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
   // ── 显示状态（仿 Google 计算器：输入表达式 + 实时结果输出） ──
   String _expression = '';
   String _output = '';
-  Color _outputColor = const Color(0xFF000000);
+  Color _outputColor = const Color(0xFFFFFFFF);
 
   // ══════════════ 按钮输入 ══════════════
 
@@ -45,7 +45,7 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
     setState(() {
       _expression = '';
       _output = '';
-      _outputColor = const Color(0xFF000000);
+      _outputColor = const Color(0xFFFFFFFF);
     });
   }
 
@@ -70,12 +70,12 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
     setState(() {
       if (v == null) {
         _output = '无效的运算';
-        _outputColor = const Color(0xFFF44336);
+        _outputColor = const Color(0xFFEF5350);
       } else {
         final String s = _fmt(v);
         _expression = s;
         _output = s;
-        _outputColor = const Color(0xFF000000);
+        _outputColor = const Color(0xFFFFFFFF);
       }
     });
   }
@@ -84,16 +84,16 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
   void _updateOutput() {
     if (_expression.trim().isEmpty) {
       _output = '';
-      _outputColor = const Color(0xFF000000);
+      _outputColor = const Color(0xFFFFFFFF);
       return;
     }
     final _Cplx? v = _eval(_expression);
     if (v == null) {
       _output = _expression;
-      _outputColor = const Color(0x88000000);
+      _outputColor = const Color(0x88FFFFFF);
     } else {
       _output = _fmt(v);
-      _outputColor = const Color(0xFF000000);
+      _outputColor = const Color(0xFFFFFFFF);
     }
   }
 
@@ -250,7 +250,7 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBFE),
+      backgroundColor: const Color(0xFF121212),
       body: SafeArea(
         child: Stack(
           children: <Widget>[
@@ -279,7 +279,7 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
                                   maxLines: 1,
                                   style: const TextStyle(
                                     fontSize: 36,
-                                    color: Color(0xFF424242),
+                                    color: Color(0xFFE6E6E6),
                                   ),
                                 ),
                               ),
@@ -308,7 +308,7 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
                             child: Center(
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
-                                  color: Color(0xDD424242),
+                                  color: Color(0xDDE6E6E6),
                                   borderRadius: BorderRadius.all(
                                     Radius.circular(3),
                                   ),
@@ -419,14 +419,14 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
     late final Color bg;
     switch (k.kind) {
       case _CalcKeyKind.ac:
-        bg = const Color(0xFFFED7F6); // 浅粉
+        bg = const Color(0xFF5A2A45); // 深粉
         break;
       case _CalcKeyKind.function:
-        bg = const Color(0xFFDFE1FA); // 浅紫蓝
+        bg = const Color(0xFF2C2F55); // 深紫蓝
         break;
       case _CalcKeyKind.digit:
       case _CalcKeyKind.light:
-        bg = const Color(0xFFF3F2F8); // 浅灰
+        bg = const Color(0xFF2A2A2E); // 深灰
         break;
     }
 
@@ -442,7 +442,7 @@ class _CalculatorDisguisePageState extends State<CalculatorDisguisePage> {
             child: Text(
               k.label,
               style: TextStyle(
-                color: const Color(0xFF151B29),
+                color: const Color(0xFFF2F2F5),
                 fontSize: k.fontSize,
                 fontWeight: FontWeight.w400,
               ),
