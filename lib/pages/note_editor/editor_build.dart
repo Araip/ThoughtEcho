@@ -136,7 +136,7 @@ extension _NoteEditorBuild on _NoteFullEditorPageState {
                                     MaterialTapTargetSize.shrinkWrap,
                                 // 定制版：显示分到的标签名（而非仅显示数量）
                                 label: Text(
-                                  _selectedTagNamesDisplay(),
+                                  _selectedTagNamesDisplay(l10n),
                                 ),
                                 avatar: Icon(Icons.tag, size: 16),
                               ),
@@ -330,7 +330,7 @@ extension _NoteEditorBuild on _NoteFullEditorPageState {
   }
 
   /// 定制版：把选中的标签 id 列表映射为标签名显示（最多显示 2 个 + 其余数量）。
-  String _selectedTagNamesDisplay() {
+  String _selectedTagNamesDisplay(AppLocalizations l10n) {
     final List<String> ids = _metadataState.selectedTagIds;
     if (ids.isEmpty) return l10n.tagsCount(0);
     final List<String> names = <String>[];

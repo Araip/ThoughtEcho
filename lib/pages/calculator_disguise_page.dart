@@ -479,7 +479,6 @@ class _Cplx {
   final double im;
 
   static const _Cplx zero = _Cplx(0, 0);
-  static const _Cplx one = _Cplx(1, 0);
   static const _Cplx e = _Cplx(2.718281828459045, 0);
   static const _Cplx pi = _Cplx(3.141592653589793, 0);
   static const _Cplx i = _Cplx(0, 1);
@@ -688,7 +687,7 @@ class _Parser {
 
   bool get atEnd => pos >= ts.length;
 
-  _Token get next => ts[pos++];
+  _Token next() => ts[pos++];
 
   bool peekKind(_TokKind k) => !atEnd && ts[pos].kind == k;
 
@@ -702,7 +701,7 @@ class _Parser {
   _Cplx parseExpr() {
     _Cplx left = parseTerm();
     while (peekOp('+') || peekOp('-')) {
-      final String op = next.text;
+      final String op = next().text;
       final _Cplx right = parseTerm();
       left = op == '+' ? left.add(right) : left.sub(right);
     }
@@ -712,7 +711,7 @@ class _Parser {
   _Cplx parseTerm() {
     _Cplx left = parseUnary();
     while (peekOp('*') || peekOp('/')) {
-      final String op = next.text;
+      final String op = next().text;
       final _Cplx right = parseUnary();
       left = op == '*' ? left.mul(right) : left.div(right);
     }
@@ -743,11 +742,11 @@ class _Parser {
 
   _Cplx parseAtom() {
     if (peekKind(_TokKind.number)) {
-      final double v = double.tryParse(next.text) ?? 0;
+      final double v = double.tryParse(next().text) ?? 0;
       return _Cplx(v, 0);
     }
     if (peekKind(_TokKind.ident)) {
-      final String name = next.text.toLowerCase();
+      final String name = next().text.toLowerCase();
       if (name == 'e') return _Cplx.e;
       if (name == 'pi' || name == 'π') return _Cplx.pi;
       if (name == 'i') return _Cplx.i;
@@ -817,10 +816,10 @@ _Cplx _applyFunc(String name, List<_Cplx> args) {
       return _Cplx(a.abs, 0);
     case 'floor':
       if (!a.isReal) throw _EvalError();
-      return _Cplx(math.floor(a.real).toDouble(), 0);
+      return _Cplx(a.real.floor().toDouble(), 0);
     case 'ceil':
       if (!a.isReal) throw _EvalError();
-      return _Cplx(math.ceil(a.real).toDouble(), 0);
+      return _Cplx(a.real.ceil().toDouble(), 0);
     case 'deg':
       if (!a.isReal) throw _EvalError();
       return _Cplx(a.real * 180 / math.pi, 0);

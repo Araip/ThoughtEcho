@@ -32,7 +32,7 @@ class _UnifiedQuillToolbarState extends State<UnifiedQuillToolbar> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     // 定制版：按设置里自定义的分组顺序渲染工具栏
-    final List<String> order;
+    late final List<String> order;
     try {
       order = context.read<SettingsService>().editorToolbarGroupOrder;
     } catch (_) {
@@ -41,7 +41,7 @@ class _UnifiedQuillToolbarState extends State<UnifiedQuillToolbar> {
 
     final List<Widget> children = <Widget>[];
     for (final String id in order) {
-      final List<Widget> group = _buildGroupById(id);
+      final List<Widget> group = _groupById(id);
       if (group.isEmpty) continue;
       if (children.isNotEmpty) children.add(_buildDivider());
       children.addAll(group);
