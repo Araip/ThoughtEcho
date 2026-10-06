@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:provider/provider.dart';
+import '../services/settings_service.dart';
 import '../theme/theme_style.dart';
 import 'unified_media_import_dialog.dart';
 import 'package:thoughtecho/gen_l10n/app_localizations.dart';
@@ -29,6 +31,21 @@ class _UnifiedQuillToolbarState extends State<UnifiedQuillToolbar> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // 定制版：按设置里自定义的分组顺序渲染工具栏
+    final List<String> order;
+    try {
+      order = context.read<SettingsService>().editorToolbarGroupOrder;
+    } catch (_) {
+      order = SettingsService.defaultToolbarOrder;
+    }
+
+    final List<Widget> children = <Widget>[];
+    for (final String id in order) {
+      final List<Widget> group = _buildGroupById(id);
+      if (group.isEmpty) continue;
+      if (children.isNotEmpty) children.add(_buildDivider());
+      children.addAll(group);
+    }
 
     return Container(
       height: 56,
@@ -44,33 +61,39 @@ class _UnifiedQuillToolbarState extends State<UnifiedQuillToolbar> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Row(
-          children: [
-            ..._buildHistoryGroup(),
-            _buildDivider(),
-            ..._buildBasicFormatGroup(),
-            _buildDivider(),
-            ..._buildHeaderGroup(),
-            _buildDivider(),
-            ..._buildFontGroup(),
-            _buildDivider(),
-            ..._buildColorGroup(),
-            _buildDivider(),
-            ..._buildAlignmentGroup(),
-            _buildDivider(),
-            ..._buildListGroup(),
-            _buildDivider(),
-            ..._buildQuoteAndCodeGroup(),
-            _buildDivider(),
-            ..._buildLinkGroup(),
-            _buildDivider(),
-            ..._buildMediaGroup(context),
-            _buildDivider(),
-            ..._buildMiscGroup(),
-          ],
-        ),
+        child: Row(children: children),
       ),
     );
+  }
+
+  /// 组 id → 该组的按钮列表
+  List<Widget> _groupById(String id) {
+    switch (id) {
+      case 'history':
+        return _buildHistoryGroup();
+      case 'basic':
+        return _buildBasicFormatGroup();
+      case 'header':
+        return _buildHeaderGroup();
+      case 'font':
+        return _buildFontGroup();
+      case 'color':
+        return _buildColorGroup();
+      case 'alignment':
+        return _buildAlignmentGroup();
+      case 'list':
+        return _buildListGroup();
+      case 'quote':
+        return _buildQuoteAndCodeGroup();
+      case 'link':
+        return _buildLinkGroup();
+      case 'media':
+        return _buildMediaGroup(context);
+      case 'misc':
+        return _buildMiscGroup();
+      default:
+        return const <Widget>[];
+    }
   }
 
   List<Widget> _buildHistoryGroup() {

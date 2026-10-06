@@ -8,6 +8,7 @@ import '../services/settings_service.dart';
 import '../services/unified_log_service.dart';
 import 'hitokoto_settings_page.dart';
 import 'theme_settings_page.dart';
+import 'editor_toolbar_order_page.dart';
 import 'logs_settings_page.dart';
 import '../services/location_service.dart';
 import '../services/weather_service.dart';
@@ -67,6 +68,7 @@ class SettingsPageState extends State<SettingsPage> {
   final GlobalKey _preferencesGuideKey = GlobalKey();
   final GlobalKey _startupPageGuideKey = GlobalKey();
   final GlobalKey _themeGuideKey = GlobalKey();
+  final GlobalKey _toolbarOrderGuideKey = GlobalKey();
   bool _guidesTriggered = false;
 
   @override
@@ -322,6 +324,22 @@ class SettingsPageState extends State<SettingsPage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const ThemeSettingsPage(),
+                      ),
+                    );
+                  },
+                ),
+                // 定制版：编辑器工具栏排序
+                ListTile(
+                  key: _toolbarOrderGuideKey,
+                  title: const Text('编辑器工具栏排序'),
+                  subtitle: const Text('调整编辑器工具栏各按钮组的前后顺序'),
+                  leading: const Icon(Icons.tune),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EditorToolbarOrderPage(),
                       ),
                     );
                   },

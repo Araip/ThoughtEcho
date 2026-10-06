@@ -70,6 +70,39 @@ class SettingsService extends ChangeNotifier {
   static const String _lastVersionKey = 'lastVersion';
   static const String _deviceIdKey = 'device_id_v1'; // 新增：设备唯一ID缓存键
   static const String _syncSkipConfirmKey = 'sync_skip_confirm';
+
+  // 定制版：编辑器工具栏分组顺序（组 id 列表）。
+  static const String _editorToolbarGroupOrderKey =
+      'editor_toolbar_group_order_v1';
+
+  /// 默认工具栏分组顺序（供工具栏组件与设置页共用）。
+  static const List<String> defaultToolbarOrder = <String>['history','basic','header','font','color','alignment','list','quote','link','media','misc'];
+
+  /// 编辑器工具栏的分组顺序（组 id 列表）。读不到或解析失败则回退默认顺序。
+  List<String> get editorToolbarGroupOrder {
+    final String? raw = _mmkv.getString(_editorToolbarGroupOrderKey);
+    if (raw == null || raw.isEmpty) return List.of(defaultToolbarOrder);
+    try {
+      final List<dynamic> list = json.decode(raw);
+      final List<String> ids =
+          list.whereType<String>().toList(growable: false);
+      if (ids.isEmpty) return List.of(defaultToolbarOrder);
+      return ids;
+    } catch (_) {
+      return List.of(defaultToolbarOrder);
+    }
+  }
+
+  /// 保存编辑器工具栏分组顺序，并补上缺失的分组（防止将来新增组丢失）。
+  Future<void> setEditorToolbarGroupOrder(List<String> order) async {
+    final Set<String> all = <String>{...defaultToolbarOrder, ...order};
+    final List<String> merged = <String>[
+      ...order.where(all.contains),
+      ...defaultToolbarOrder.where((e) => !order.contains(e)),
+    ];
+    await _mmkv.setString(_editorToolbarGroupOrderKey, json.encode(merged));
+    notifyListeners();
+  }
   static const String _syncDefaultIncludeMediaKey =
       'sync_default_include_media';
   AISettings get aiSettings => _aiSettings;

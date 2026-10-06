@@ -134,9 +134,9 @@ extension _NoteEditorBuild on _NoteFullEditorPageState {
                                 visualDensity: VisualDensity.compact,
                                 materialTapTargetSize:
                                     MaterialTapTargetSize.shrinkWrap,
+                                // 定制版：显示分到的标签名（而非仅显示数量）
                                 label: Text(
-                                  l10n.tagsCount(
-                                      _metadataState.selectedTagIds.length),
+                                  _selectedTagNamesDisplay(),
                                 ),
                                 avatar: Icon(Icons.tag, size: 16),
                               ),
@@ -327,5 +327,26 @@ extension _NoteEditorBuild on _NoteFullEditorPageState {
         ),
       ),
     );
+  }
+
+  /// 定制版：把选中的标签 id 列表映射为标签名显示（最多显示 2 个 + 其余数量）。
+  String _selectedTagNamesDisplay() {
+    final List<String> ids = _metadataState.selectedTagIds;
+    if (ids.isEmpty) return l10n.tagsCount(0);
+    final List<String> names = <String>[];
+    for (final String id in ids) {
+      String? name;
+      for (final NoteTag t in _metaDialogTags) {
+        if (t.id == id) {
+          name = t.name;
+          break;
+        }
+      }
+      if (name == null || name.trim().isEmpty) continue;
+      names.add(name.trim());
+    }
+    if (names.isEmpty) return l10n.tagsCount(ids.length);
+    if (names.length <= 2) return names.join('、');
+    return '${names.sublist(0, 2).join('、')} +${names.length - 2}';
   }
 }

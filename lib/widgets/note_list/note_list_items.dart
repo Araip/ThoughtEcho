@@ -56,12 +56,16 @@ extension _NoteListItemsExtension on NoteListViewState {
               children: [
                 // 搜索框 - 现代圆角样式，筛选按钮内嵌到右侧
                 // 定制版：随列表滚动方向显隐（下滑隐藏、上滑出现）。
-                // AnimatedSwitcher 让收起/展开时高度平滑过渡，避免滚动跳动。
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  child: _searchBarVisible && !_isExportMode
+                // AnimatedSize 让收起/展开有平滑的高度过渡，不会"直接没了"；
+                // 配合 AnimatedOpacity 让搜索框内容同步淡出淡入。
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: _searchBarVisible && !_isExportMode ? 1.0 : 0.0,
+                    child: _searchBarVisible && !_isExportMode
                       ? Container(
                           key: const ValueKey('noteSearchBar'),
                           padding: EdgeInsets.fromLTRB(
@@ -188,6 +192,7 @@ extension _NoteListItemsExtension on NoteListViewState {
                         width: double.infinity,
                         height: 0,
                       ),
+                  ),
                 ),
 
                 // 筛选条件展示区域

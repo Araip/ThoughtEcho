@@ -125,6 +125,19 @@ class _NoteFullEditorPageState extends State<NoteFullEditorPage> {
   /// 定制版：编辑元数据弹窗中可用的标签缓存。
   List<NoteTag> _metaDialogTags = <NoteTag>[];
 
+  /// 定制版：打开编辑器即预加载标签列表，用于顶部直接显示标签名。
+  Future<void> _loadTagsForDisplay() async {
+    if (_metaDialogTags.isNotEmpty) return;
+    try {
+      final List<NoteTag> tags =
+          await context.read<DatabaseService>().getTags();
+      if (!mounted || _metaDialogTags.isNotEmpty) return;
+      setState(() => _metaDialogTags = tags);
+    } catch (_) {
+      // 失败则顶部回退显示数量
+    }
+  }
+
   /// 定制版：请求正文焦点（带一次延迟重试，避免异步载入后失焦）
   void _focusEditorBody() {
     if (!mounted) return;
@@ -166,6 +179,11 @@ class _NoteFullEditorPageState extends State<NoteFullEditorPage> {
     // 定制版：进入编辑器后立即聚焦正文，可直接开始输入
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusEditorBody();
+    });
+
+    // 定制版：预加载标签，供顶部直接显示标签名（而非仅数量）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTagsForDisplay();
     });
 
     // 先初始化为基本控制器，避免阻塞UI
