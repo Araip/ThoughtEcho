@@ -267,7 +267,7 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
   }
 
   Widget _buildAllCard(ThemeData theme, ColorScheme colors) {
-    Material(
+    return Material(
       color: colors.primaryContainer,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
