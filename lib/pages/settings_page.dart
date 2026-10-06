@@ -22,7 +22,6 @@ import '../widgets/app_snackbar.dart';
 import '../widgets/city_search_widget.dart';
 import '../controllers/weather_search_controller.dart';
 import 'tag_settings_page.dart';
-import 'license_page.dart' as license;
 import 'preferences_detail_page.dart';
 import 'user_guide_page.dart';
 import 'storage_management_page.dart';
@@ -48,8 +47,6 @@ class SettingsPage extends StatefulWidget {
 
 class SettingsPageState extends State<SettingsPage> {
   // --- 定义链接地址 ---
-  final String _projectUrl = 'https://github.com/Shangjin-Xiao/ThoughtEcho';
-  final String _websiteUrl = 'https://note.shangjinyun.cn/';
   final String _privacyUrl = AppConstants.privacyPolicyUrl;
 
   /// 定制版「开发者与软件介绍」里展示的信息。
@@ -635,20 +632,6 @@ class SettingsPageState extends State<SettingsPage> {
                                 ),
                                 _buildAboutEntry(
                                   context: context,
-                                  icon: Icons.language_outlined,
-                                  text: l10n.settingsVisitWebsite,
-                                  onTap: () => _launchUrl(_websiteUrl),
-                                  isExternal: true,
-                                ),
-                                _buildAboutEntry(
-                                  context: context,
-                                  icon: Icons.code_outlined,
-                                  text: l10n.settingsViewSource,
-                                  onTap: () => _launchUrl(_projectUrl),
-                                  isExternal: true,
-                                ),
-                                _buildAboutEntry(
-                                  context: context,
                                   icon: Icons.help_outline,
                                   text: l10n.userGuide,
                                   onTap: () {
@@ -658,21 +641,6 @@ class SettingsPageState extends State<SettingsPage> {
                                       MaterialPageRoute(
                                         builder: (context) =>
                                             const UserGuidePage(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                _buildAboutEntry(
-                                  context: context,
-                                  icon: Icons.article_outlined,
-                                  text: l10n.settingsViewLicenses,
-                                  onTap: () {
-                                    Navigator.pop(dialogContext);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const license.LicensePage(),
                                       ),
                                     );
                                   },

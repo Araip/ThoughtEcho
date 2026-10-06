@@ -74,118 +74,97 @@ extension _NoteListItemsExtension on NoteListViewState {
                             horizontalPadding,
                             0,
                           ),
-                          child: TextField(
-                        controller: _searchController,
-                        focusNode: _searchFocusNode,
-                        onChanged: _onSearchChanged,
-                        textInputAction: TextInputAction.search,
-                        onSubmitted: (_) => _searchFocusNode.unfocus(),
-                        decoration: InputDecoration(
-                          hintText: l10n.searchNotes,
-                          isDense: true,
-                          filled: true,
-                          fillColor: AppSurfaceTokens.of(context).searchBox,
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // 筛选按钮
-                              IconButton(
-                                key: widget.filterButtonKey, // 功能引导 key
-                                icon: const Icon(Icons.tune),
-                                tooltip: l10n.filterAndSortTooltip,
-                                onPressed: () {
-                                  final settings =
-                                      context.read<SettingsService>();
-                                  showModalBottomSheet(
-                                    context: context,
-                                    isScrollControlled: true,
-                                    backgroundColor: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerLowest,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.vertical(
-                                        top: Radius.circular(
-                                          AppShapeTokens.of(
-                                            context,
-                                          ).dialogRadius,
-                                        ),
-                                      ),
-                                    ),
-                                    builder: (context) => NoteFilterSortSheet(
-                                      allTags: _effectiveTags,
-                                      selectedTagIds: widget.selectedTagIds,
-                                      sortType: widget.sortType,
-                                      sortAscending: widget.sortAscending,
-                                      selectedWeathers: widget.selectedWeathers,
-                                      selectedDayPeriods:
-                                          widget.selectedDayPeriods,
-                                      requireBiometricForHidden:
-                                          settings.requireBiometricForHidden,
-                                      onApply: (
-                                        tagIds,
-                                        sortType,
-                                        sortAscending,
-                                        selectedWeathers,
-                                        selectedDayPeriods,
-                                      ) {
-                                        widget.onTagSelectionChanged(
-                                          tagIds,
-                                        );
-                                        widget.onSortChanged(
-                                          sortType,
-                                          sortAscending,
-                                        );
-                                        widget.onFilterChanged(
-                                          selectedWeathers,
-                                          selectedDayPeriods,
-                                        );
-                                      },
-                                    ),
+                          child: SearchBar(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode,
+                            hintText: l10n.searchNotes,
+                            leading: const Icon(Icons.search),
+                            onChanged: _onSearchChanged,
+                            elevation: WidgetStateProperty.all(0),
+                            backgroundColor: WidgetStateProperty.all(
+                              Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest
+                                  .withValues(alpha: 0.5),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                            ),
+                            trailing: [
+                              ValueListenableBuilder<TextEditingValue>(
+                                valueListenable: _searchController,
+                                builder: (context, value, child) {
+                                  if (value.text.isEmpty) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  return IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    tooltip: l10n.clear,
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      _onSearchChanged('');
+                                    },
                                   );
                                 },
                               ),
+                              // 筛选按钮
+                              IconButton(
+                              key: widget.filterButtonKey, // 功能引导 key
+                              icon: const Icon(Icons.tune),
+                              tooltip: l10n.filterAndSortTooltip,
+                              onPressed: () {
+                                final settings =
+                                    context.read<SettingsService>();
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerLowest,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(
+                                        AppShapeTokens.of(
+                                          context,
+                                        ).dialogRadius,
+                                      ),
+                                    ),
+                                  ),
+                                  builder: (context) => NoteFilterSortSheet(
+                                    allTags: _effectiveTags,
+                                    selectedTagIds: widget.selectedTagIds,
+                                    sortType: widget.sortType,
+                                    sortAscending: widget.sortAscending,
+                                    selectedWeathers: widget.selectedWeathers,
+                                    selectedDayPeriods:
+                                        widget.selectedDayPeriods,
+                                    requireBiometricForHidden:
+                                        settings.requireBiometricForHidden,
+                                    onApply: (
+                                      tagIds,
+                                      sortType,
+                                      sortAscending,
+                                      selectedWeathers,
+                                      selectedDayPeriods,
+                                    ) {
+                                      widget.onTagSelectionChanged(
+                                        tagIds,
+                                      );
+                                      widget.onSortChanged(
+                                        sortType,
+                                        sortAscending,
+                                      );
+                                      widget.onFilterChanged(
+                                        selectedWeathers,
+                                        selectedDayPeriods,
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
                             ],
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              shape.inputRadius,
-                            ),
-                            borderSide: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.28),
-                              width: 1,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              shape.inputRadius,
-                            ),
-                            borderSide: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.20),
-                              width: 1,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              shape.inputRadius,
-                            ),
-                            borderSide: BorderSide(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.65),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-                      ),
                     )
                     : const SizedBox(
                         key: ValueKey('noteSearchBarHidden'),
