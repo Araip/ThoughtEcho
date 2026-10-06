@@ -814,6 +814,8 @@ extension _NoteListItemsExtension on NoteListViewState {
       isExpanded: isExpanded,
       isSelected: isSelected,
       selectionMode: _isExportMode,
+      // 定制版：记录页列表用紧凑模式（卡片更矮、只显标题与分类、单击进编辑）。
+      compactListMode: true,
       // 首条与搜索框之间只隔这一层卡片上边距。
       topMarginOverride: index == 0 ? QuoteItemWidget.firstItemTopMargin : null,
       onToggleExpanded: (expanded) {

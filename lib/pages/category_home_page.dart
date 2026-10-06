@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/note_tag.dart';
 import '../models/quote_model.dart';
 import '../services/database_service.dart';
+import '../services/smart_category_service.dart';
 import '../widgets/tag_picker_sheet.dart';
 import 'note_full_editor_page.dart';
 
@@ -11,6 +12,8 @@ import 'note_full_editor_page.dart';
 ///
 /// 作为应用的主页（替代原先的「每日一言」首页），按「分类 / 标签」聚合展示
 /// 全部便签。点击某个分类即可进入该分类下的便签列表。
+/// 「全部便签」只显示**未分类**的便签，方便知道还剩多少没有分类；
+/// 支持一键本地「智能分类」（关键词规则，无需联网）。
 class CategoryHomePage extends StatefulWidget {
   const CategoryHomePage({super.key});
 
@@ -28,9 +31,12 @@ class _CategoryEntry {
 
 class _CategoryHomePageState extends State<CategoryHomePage> {
   bool _loading = true;
+  bool _classifying = false;
   String? _error;
   List<_CategoryEntry> _entries = const <_CategoryEntry>[];
-  int _totalCount = 0;
+
+  /// 未分类便签数（「全部便签」只显示这些）。
+  int _uncategorizedCount = 0;
 
   @override
   void initState() {
@@ -57,16 +63,23 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
       }
       entries.sort((_CategoryEntry a, _CategoryEntry b) =>
           b.count.compareTo(a.count));
-      int total = 0;
+      int uncategorized = 0;
       try {
-        total = await db.getQuotesCount();
+        // 全部便签只显示未分类的：统计未分类条数。
+        final List<Quote> all = await db.getUserQuotes(
+          categoryId: null,
+          limit: 5000,
+        );
+        uncategorized = all
+            .where((Quote q) => !SmartCategoryService.isCategorized(q))
+            .length;
       } catch (_) {
-        total = 0;
+        uncategorized = 0;
       }
       if (!mounted) return;
       setState(() {
         _entries = entries;
-        _totalCount = total;
+        _uncategorizedCount = uncategorized;
         _loading = false;
         _error = null;
       });
@@ -91,6 +104,34 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
     if (mounted) {
       await _loadCategories();
     }
+  }
+
+  /// 一键智能分类：本地关键词规则自动给未分类便签打标签。
+  Future<void> _runSmartClassify() async {
+    if (_classifying) return;
+    setState(() => _classifying = true);
+    final DatabaseService db = context.read<DatabaseService>();
+    int done = 0;
+    try {
+      done = await SmartCategoryService.run(db);
+    } catch (_) {
+      done = -1;
+    }
+    if (!mounted) return;
+    setState(() => _classifying = false);
+    await _loadCategories();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          done < 0
+              ? '智能分类执行失败，请重试'
+              : done == 0
+                  ? '没有可智能分类的便签（可能都已分类，或没有匹配的内置分类）'
+                  : '智能分类完成：已自动分类 $done 条便签',
+        ),
+      ),
+    );
   }
 
   @override
@@ -210,53 +251,118 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
   }
 
   Widget _buildAllCard(ThemeData theme, ColorScheme colors) {
-    return Material(
-      color: colors.primaryContainer,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => _openCategory('全部便签', null),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: colors.primary.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(Icons.inbox_rounded, color: colors.primary),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(
-                      '全部便签',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colors.onPrimaryContainer,
-                      ),
+    return Column(
+      children: <Widget>[
+        Material(
+          color: colors.primaryContainer,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => _openCategory('全部便签', null),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '共 $_totalCount 条记录',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colors.onPrimaryContainer,
-                      ),
+                    child: Icon(Icons.inbox_rounded, color: colors.primary),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          '全部便签',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: colors.onPrimaryContainer,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '还有 $_uncategorizedCount 条未分类',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onPrimaryContainer,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  Icon(Icons.chevron_right, color: colors.onPrimaryContainer),
+                ],
               ),
-              Icon(Icons.chevron_right, color: colors.onPrimaryContainer),
-            ],
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        // 定制版：一键智能分类（本地关键词规则，无需联网）。
+        Material(
+          color: colors.secondaryContainer,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: _classifying ? null : _runSmartClassify,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: colors.secondary.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: _classifying
+                        ? Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: colors.secondary,
+                            ),
+                          )
+                        : Icon(Icons.auto_awesome_rounded,
+                            color: colors.secondary),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          '智能分类',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: colors.onSecondaryContainer,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '按关键词自动把未分类便签分到对应标签',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSecondaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!_classifying)
+                    Icon(Icons.chevron_right,
+                        color: colors.onSecondaryContainer),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -385,6 +491,13 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
         ..sort(
           (Quote a, Quote b) => (b.date ?? '').compareTo(a.date ?? ''),
         );
+      // 定制版：「全部便签」只显示**未分类**的便签。已分到任何分类/标签
+      // （例如“C类日常”）的便签不再出现，这样一看就知道还剩多少没分类。
+      if (cid == null) {
+        quotes = quotes
+            .where((Quote q) => !SmartCategoryService.isCategorized(q))
+            .toList();
+      }
     } catch (_) {
       quotes = const <Quote>[];
     }
@@ -417,6 +530,25 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
     final String? f = _filterTagId;
     if (f == null) return _quotes;
     return _quotes.where((Quote q) => q.tagIds.contains(f)).toList();
+  }
+
+  /// 便签所属分类名（用于「全部便签」里显示它在什么类下面）。
+  String _categoryNameOf(Quote quote) {
+    final String? cid = quote.categoryId;
+    if (cid != null && cid.trim().isNotEmpty) {
+      for (final NoteTag t in _tags) {
+        if (t.id == cid) return '分类：${t.name}';
+      }
+    }
+    final List<String> tagIds = quote.tagIds;
+    if (tagIds.isNotEmpty) {
+      for (final String tid in tagIds) {
+        for (final NoteTag t in _tags) {
+          if (t.id == tid) return '分类：${t.name}';
+        }
+      }
+    }
+    return '未分类';
   }
 
   Future<void> _openQuote(Quote quote) async {
@@ -600,7 +732,11 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _selectionMode ? '已选 ${_selectedIds.length} 条' : widget.title,
+          _selectionMode
+              ? '已选 ${_selectedIds.length} 条'
+              : widget.categoryId == null
+                  ? '全部便签（未分类 ${_quotes.length} 条）'
+                  : widget.title,
         ),
         leading: _selectionMode
             ? IconButton(
@@ -648,7 +784,9 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
                       ? Center(
                           child: Text(
                             _quotes.isEmpty
-                                ? '这个分类下还没有便签'
+                                ? (widget.categoryId == null
+                                    ? '所有便签都已分类 🎉'
+                                    : '这个分类下还没有便签')
                                 : '该标签下还没有便签',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colors.onSurfaceVariant,
@@ -680,7 +818,8 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 subtitle: Text(
-                                  quote.date,
+                                  // 定制版：显示便签当前所属分类（如“C类日常”）。
+                                  '${_categoryNameOf(quote)} · ${quote.date}',
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: colors.onSurfaceVariant,
                                   ),

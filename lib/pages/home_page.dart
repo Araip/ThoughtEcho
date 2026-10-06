@@ -204,7 +204,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _targetNavigation = HomeTargetNavigation(
       initialTargetNoteId: widget.initialTargetNoteId,
       currentPage: () => _pageController.currentIndex,
-      selectNotesPage: () => _pageController.selectPage(1),
+      selectNotesPage: () => _pageController.selectPage(0),
       isTagsLoading: () => _pageController.isLoadingTags,
       ensureTagsLoaded: _loadTags,
       scrollToNote: (noteId) async {
@@ -234,8 +234,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     // 使用延迟方法来确保在UI构建完成后执行初始化
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // 如果初始页面是记录页，优先加载标签数据
-      if (widget.initialPage == 1) {
+      // 如果初始页面是记录页（index 0），优先加载标签数据
+      if (widget.initialPage == 0) {
         // 记录页启动时，先加载标签（高优先级）
         await _loadTags();
         _targetNavigation.onNotesReady();
@@ -254,7 +254,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
 
       // 如果不是记录页启动，确保标签也被加载
-      if (widget.initialPage != 1) {
+      if (widget.initialPage != 0) {
         _refreshTags();
       }
 
@@ -548,8 +548,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _onTabChanged(int index) {
     _pageController.selectPage(index);
 
-    // 当切换到笔记列表页时，重新加载标签
-    if (_pageController.currentIndex == 1) {
+    // 当切换到记录页（第一个 tab）时，重新加载标签
+    if (_pageController.currentIndex == 0) {
       _refreshTags();
       _targetNavigation.onNotesReady();
     }
@@ -858,9 +858,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         body: IndexedStack(
           index: _pageController.currentIndex,
           children: [
-            // 定制版：便签分类页（替代原「每日一言」首页，作为默认主页）
-            const CategoryHomePage(),
-            // 笔记列表页
+            // 定制版：记录页（便签列表）作为第一个 tab、默认主页
             Consumer<SettingsService>(
               builder: (context, settingsService, child) {
                 return Consumer<NoteSearchController>(
@@ -908,6 +906,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 );
               },
             ),
+            // 便签分类页（第二个 tab）
+            const CategoryHomePage(),
             // 探索页
             const ExplorePage(),
             // 设置页
@@ -921,7 +921,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             onLongPressStart: (_) => _onFABLongPress(),
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(shape.fabRadius),
+                // 定制版：中间的 + 号做成圆角矩形。
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: shape.accentShadow,
               ),
               child: FloatingActionButton(
@@ -934,7 +935,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 foregroundColor: theme
                     .floatingActionButtonTheme.foregroundColor, // 使用主题定义的颜色
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(shape.fabRadius),
+                  // 定制版：中间的 + 号做成明显的圆角矩形，不再接近圆形。
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(Icons.add, size: 28),
               ),
@@ -977,20 +979,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             surfaceTintColor: Colors.transparent,
             destinations: [
               NavigationDestination(
+                icon: const Icon(Icons.book_outlined),
+                selectedIcon: Icon(
+                  Icons.book,
+                  color: theme.colorScheme.primary,
+                ),
+                label: '记录',
+              ),
+              NavigationDestination(
                 icon: const Icon(Icons.category_outlined),
                 selectedIcon: Icon(
                   Icons.category,
                   color: theme.colorScheme.primary,
                 ),
                 label: '分类',
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.book_outlined),
-                selectedIcon: Icon(
-                  Icons.book,
-                  color: theme.colorScheme.primary,
-                ),
-                label: AppLocalizations.of(context).navNotes,
               ),
               NavigationDestination(
                 icon: const Icon(Icons.auto_awesome_outlined),

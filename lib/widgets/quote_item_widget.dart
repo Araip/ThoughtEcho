@@ -70,6 +70,12 @@ class QuoteItemWidget extends StatefulWidget {
   final bool isSelected;
   final bool selectionMode;
 
+  /// 定制版：紧凑列表模式（记录页首页使用）。
+  ///
+  /// 开启后卡片更矮：折叠态正文只显示 2 行（作为「标题」），来源路径行不渲染，
+  /// 标签胶囊保留（作为「分类」展示），点击行为变成「单击直接进编辑」。
+  final bool compactListMode;
+
   /// 单独收紧卡片上边距，供列表首条使用。
   ///
   /// 搜索框与首条笔记之间只隔着一层卡片上边距，不需要和卡片之间的间距同宽。
@@ -122,6 +128,7 @@ class QuoteItemWidget extends StatefulWidget {
     this.isSelected = false,
     this.selectionMode = false,
     this.topMarginOverride,
+    this.compactListMode = false,
   });
 
   @override
@@ -688,7 +695,15 @@ class _QuoteItemWidgetState extends State<QuoteItemWidget>
             key: widget.foldToggleGuideKey ??
                 const ValueKey('quote_item.double_tap_region'),
             behavior: HitTestBehavior.translucent,
-            onDoubleTap: needsExpansion
+            // 定制版（记录页紧凑模式）：单击直接进编辑，不再依赖双击查看。
+            // 非紧凑模式（如回收站等其它场景）保留原双击展开行为。
+            onTap: widget.compactListMode
+                ? () {
+                    Feedback.forTap(context);
+                    widget.onEdit();
+                  }
+                : null,
+            onDoubleTap: !widget.compactListMode && needsExpansion
                 ? () => _handleDoubleTap(
                       isExpanded,
                       canExpand: needsExpansion,
@@ -718,7 +733,10 @@ class _QuoteItemWidgetState extends State<QuoteItemWidget>
                     borderRadius: BorderRadius.zero,
                     child: animatedContent,
                   ),
-                if (sourceLine != null || hintInSourceRow)
+                // 定制版（紧凑模式）：不渲染来源路径行，只保留标题（正文预览）与
+                // 分类（标签胶囊），让卡片明显变矮。
+                if (!widget.compactListMode &&
+                    (sourceLine != null || hintInSourceRow))
                   _buildSourceRow(
                     sourceLine: sourceLine,
                     showHint: hintInSourceRow,
@@ -819,6 +837,8 @@ class _QuoteItemWidgetState extends State<QuoteItemWidget>
       showFullContent: showFullContent,
       needsExpansionOverride: needsExpansion,
       collapseRichTextSemantics: true,
+      // 定制版：记录页紧凑模式压矮折叠预览。
+      compactCollapsed: widget.compactListMode,
     );
 
     // canToggle 由调用方给：不可展开的卡片正文永远不会在折叠态和展开态之间

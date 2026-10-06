@@ -27,6 +27,10 @@ class QuoteContent extends StatelessWidget {
   final bool collapseRichTextSemantics;
   final bool? needsExpansionOverride;
 
+  /// 定制版：紧凑折叠模式（记录页首页）。折叠预览的盒高从 160 压到 2 行左右，
+  /// 让列表卡片明显变矮；仅影响折叠态预览，不影响展开/编辑。
+  final bool compactCollapsed;
+
   const QuoteContent({
     super.key,
     required this.quote,
@@ -35,6 +39,7 @@ class QuoteContent extends StatelessWidget {
     this.showFullContent = false,
     this.collapseRichTextSemantics = false,
     this.needsExpansionOverride,
+    this.compactCollapsed = false,
   });
 
   /// [paragraphStyle] 由 [QuillThemeTypography.paragraphStyle] 算出：quill 的段落
@@ -170,6 +175,14 @@ class QuoteContent extends StatelessWidget {
   }
 
   static const double collapsedContentMaxHeight = 160.0;
+
+  /// 定制版：紧凑折叠的盒高预算（约 2 行正文高度）。
+  static const double compactCollapsedContentMaxHeight = 76.0;
+
+  /// 当前折叠盒高：紧凑模式下用更小的预算，让列表卡片更矮。
+  double get _collapsedLimit => compactCollapsed
+      ? compactCollapsedContentMaxHeight
+      : collapsedContentMaxHeight;
 
   /// 无宽度兜底判定用的行高（逻辑像素）。
   ///
@@ -856,7 +869,7 @@ class QuoteContent extends StatelessWidget {
         blocks: blocks,
         baseStyle: baseStyle,
         maxWidth: width,
-        limit: collapsedContentMaxHeight,
+        limit: _collapsedLimit,
         showMedia: !stripMedia,
         boldWeight: boldWeight,
         textDirection: textDirection,
@@ -1009,7 +1022,7 @@ class QuoteContent extends StatelessWidget {
             final plan = layout.plan;
             final double thumbnailSize = layout.thumbnailSize;
             final double boxHeight =
-                plan.height.clamp(0.0, collapsedContentMaxHeight);
+                plan.height.clamp(0.0, _collapsedLimit);
 
             // 纯媒体笔记（摘掉媒体后一个字都不剩）连正文和间距一起省掉。
             final bool hasTextContent = !plan.isEmpty && boxHeight > 0;
@@ -1143,10 +1156,12 @@ class QuoteContent extends StatelessWidget {
       collapsedMaxLines = collapsedPlainTextMaxLines(
         style: effectiveStyle,
         textScaler: textScaler,
+        limit: _collapsedLimit,
       );
       wholeLines = collapsedPlainTextWholeLines(
         style: effectiveStyle,
         textScaler: textScaler,
+        limit: _collapsedLimit,
       );
     }
     final bool useEllipsis = clampToCollapsedBox && wholeLines != null;
@@ -1165,7 +1180,7 @@ class QuoteContent extends StatelessWidget {
     if (clampToCollapsedBox) {
       plainText = _CollapsedContentWrapper(
         key: collapsedWrapperKey,
-        maxHeight: collapsedContentMaxHeight,
+        maxHeight: _collapsedLimit,
         child: plainText,
       );
     }
