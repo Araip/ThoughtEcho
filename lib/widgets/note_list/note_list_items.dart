@@ -87,8 +87,8 @@ extension _NoteListItemsExtension on NoteListViewState {
                                   .surfaceContainerHighest
                                   .withValues(alpha: 0.5),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
+                            padding: WidgetStateProperty.all(
+                              const EdgeInsets.symmetric(horizontal: 12),
                             ),
                             trailing: [
                               ValueListenableBuilder<TextEditingValue>(
