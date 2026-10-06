@@ -747,10 +747,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final bool servicesInitialized = context.watch<bool>();
 
     // 修复：根据当前页面动态设置背景色，确保底部安全区域颜色正确
-    // 记录页使用专属背景色，其他页面使用通用页面背景色
+    // 定制版：便签页与其余页面（首页/记录/每日一言）背景互换
     final surfaces = AppSurfaceTokens.of(context);
     final scaffoldBackgroundColor =
-        _pageController.currentIndex == 1 ? surfaces.noteList : surfaces.page;
+        _pageController.currentIndex == 1 ? surfaces.page : surfaces.noteList;
 
     // 底部导航栏走 M3 给 NavigationBar 定的 surfaceContainer，不再跟着页面底色变。
     // 手工色板里 surfaceContainer 就是纸色，两者本来就重合；material 下它是

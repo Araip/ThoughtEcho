@@ -47,7 +47,7 @@ extension _NoteListItemsExtension on NoteListViewState {
     return LayoutBuilder(
       builder: (context, constraints) {
         // 主体内容 - 底色由主题下发：手工色板用自己的纸色，material 保持原算法。
-        final backgroundColor = AppSurfaceTokens.of(context).noteList;
+        final backgroundColor = AppSurfaceTokens.of(context).page;
 
         Widget mainContent = Center(
           child: ConstrainedBox(

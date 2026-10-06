@@ -200,6 +200,22 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
                   ),
                 ),
               ),
+              // 定制版：智能分类归置到刷新按钮旁边
+              IconButton(
+                tooltip: _classifying ? '智能分类中…' : '智能分类',
+                onPressed: _classifying ? null : _runSmartClassify,
+                icon: _classifying
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: colors.secondary,
+                        ),
+                      )
+                    : Icon(Icons.auto_awesome_rounded,
+                        color: colors.secondary),
+              ),
               IconButton(
                 tooltip: '刷新',
                 icon: const Icon(Icons.refresh),
@@ -251,118 +267,53 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
   }
 
   Widget _buildAllCard(ThemeData theme, ColorScheme colors) {
-    return Column(
-      children: <Widget>[
-        Material(
-          color: colors.primaryContainer,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => _openCategory('全部便签', null),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: colors.primary.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(Icons.inbox_rounded, color: colors.primary),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          '全部便签',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: colors.onPrimaryContainer,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '还有 $_uncategorizedCount 条未分类',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onPrimaryContainer,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, color: colors.onPrimaryContainer),
-                ],
+    Material(
+      color: colors.primaryContainer,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _openCategory('全部便签', null),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(Icons.inbox_rounded, color: colors.primary),
               ),
-            ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      '全部便签',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colors.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '还有 $_uncategorizedCount 条未分类',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colors.onPrimaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: colors.onPrimaryContainer),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        // 定制版：一键智能分类（本地关键词规则，无需联网）。
-        Material(
-          color: colors.secondaryContainer,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: _classifying ? null : _runSmartClassify,
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: colors.secondary.withValues(alpha: 0.16),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: _classifying
-                        ? Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: colors.secondary,
-                            ),
-                          )
-                        : Icon(Icons.auto_awesome_rounded,
-                            color: colors.secondary),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Text(
-                          '智能分类',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: colors.onSecondaryContainer,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '按关键词自动把未分类便签分到对应标签',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSecondaryContainer,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!_classifying)
-                    Icon(Icons.chevron_right,
-                        color: colors.onSecondaryContainer),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
