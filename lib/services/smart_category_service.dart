@@ -4,79 +4,32 @@ import 'database_service.dart';
 
 /// 定制版：本地启发式「智能分类」。
 ///
-/// 没有云端 AI 模型，纯本地关键词规则，不联网、不泄露内容：
-/// 1. 为每个分类簇内置一组中文关键词（工作/学习/日常/健康/财务/灵感/旅行/家庭）。
-/// 2. 用「用户标签名」匹配簇（标签名里带“工作”“日常”等字样即命中该簇），
-///    没有对应标签的簇不会凭空创建标签。
-/// 3. 遍历全部未分类便签，正文命中簇内关键词（按命中数取最高分簇）就自动打上
-///    该标签（同时写 quotes.category_id 与 quote_tags，两条查询路径都能看到）。
+/// 规则（按用户要求）：
+/// 1. 正文含 http/https/www 链接 → 「网络」。
+/// 2. 正文以数字开头或数字占比高（账号 / 密码 / 卡号等）→ 「账密」。
+/// 3. 其余全部 → 「教程」（教程 / 文字 / 技术交流等）。
 ///
-/// 返回成功分类的条数。
+/// 分类簇通过「用户标签名」匹配；某个簇没有对应标签时会自动创建内置标签，
+/// 保证一键分类总能生效。纯本地规则，不联网、不泄露内容。
 class SmartCategoryService {
   SmartCategoryService._();
 
-  /// 内置分类簇。labelKeywords 匹配用户标签名，keywords 匹配便签正文。
+  /// 内置分类簇（优先级从高到低：网络 > 账密 > 教程兜底）。
   static const List<_SmartCategoryRule> _rules = <_SmartCategoryRule>[
     _SmartCategoryRule(
-      labelKeywords: <String>['工作', '办公', '职场', '上班', '业务', '项目', '客户'],
-      keywords: <String>[
-        '开会', '会议', '客户', '项目', '汇报', '报告', '周报', '月报', '需求', '上线',
-        '加班', '领导', '同事', '面试', 'offer', '简历', 'ppt', '合同', '报价',
-        '任务', '截止', '待办', '工位', '工单', '排期', '评审', '迭代',
-      ],
+      labelKeywords: <String>['网络', '网址', '网站', '链接', 'http', 'https', '网页', '浏览器'],
+      defaultTagName: '网络',
+      urlKeywords: <String>['http://', 'https://', 'www.', '://'],
     ),
     _SmartCategoryRule(
-      labelKeywords: <String>['学习', '读书', '阅读', '课程', '考试', '复习', '备考', '考研'],
-      keywords: <String>[
-        '学习', '读书', '阅读', '课程', '考试', '复习', '笔记', '论文', '单词', '英语',
-        '网课', '刷题', '作业', '老师', '学校', '考研', '备考', '知识点', '教材',
-        '课本', '练习', '测验', '背诵', '默写',
-      ],
+      labelKeywords: <String>['账号', '密码', '账密', '账户', '帐号', '账号密码', '登录', '密保'],
+      defaultTagName: '账密',
+      digitBased: true,
     ),
     _SmartCategoryRule(
-      labelKeywords: <String>['日常', '生活', '家务', '琐事', '杂事', '琐碎'],
-      keywords: <String>[
-        '买菜', '做饭', '洗碗', '家务', '打扫', '洗衣', '快递', '取件', '寄件', '缴费',
-        '水费', '电费', '燃气', '购物', '超市', '修理', '充电', '买菜', '晾衣',
-        '倒垃圾', '拖地', '擦窗', '换被套', '买菜做饭', '取快递',
-      ],
-    ),
-    _SmartCategoryRule(
-      labelKeywords: <String>['健康', '运动', '健身', '身体', '养生'],
-      keywords: <String>[
-        '健身', '跑步', '运动', '锻炼', '体检', '吃药', '医院', '医生', '看病', '挂号',
-        '睡眠', '早睡', '熬夜', '头疼', '感冒', '发烧', '拉伸', '瑜伽', '游泳',
-        '骑车', '步行', '散步', '血压', '血糖', '疫苗', '复查', '医嘱',
-      ],
-    ),
-    _SmartCategoryRule(
-      labelKeywords: <String>['财务', '理财', '金钱', '账', '收支'],
-      keywords: <String>[
-        '工资', '报销', '账单', '转账', '收款', '付款', '发票', '税', '公积金', '社保',
-        '预算', '存钱', '理财', '银行卡', '还款', '房贷', '车贷', '租金', '收入',
-        '支出', '余额', '利息', '股票', '基金', '红包',
-      ],
-    ),
-    _SmartCategoryRule(
-      labelKeywords: <String>['灵感', '想法', '创意', '点子'],
-      keywords: <String>[
-        '想法', '点子', '灵感', '创意', '脑洞', '梦到', '构思', '设想', '突然',
-        '有个主意', '记录一下', '备忘', '提醒自己',
-      ],
-    ),
-    _SmartCategoryRule(
-      labelKeywords: <String>['旅行', '旅游', '出行', '旅程'],
-      keywords: <String>[
-        '旅行', '旅游', '机票', '高铁', '酒店', '民宿', '景点', '攻略', '行程',
-        '出发', '行李', '火车票', '护照', '签证', '自驾', '景点门票', '航班',
-      ],
-    ),
-    _SmartCategoryRule(
-      labelKeywords: <String>['家庭', '家人', '亲情', '家里'],
-      keywords: <String>[
-        '爸妈', '妈妈', '爸爸', '孩子', '宝宝', '家人', '家庭', '亲戚', '回家',
-        '过年', '生日', '礼物', '团圆', '做饭给', '接孩子', '送爸妈',
-      ],
+      labelKeywords: <String>['教程', '技术', '交流', '文字', '文章', '文档', '资料', '学习', '笔记', '知识', '备忘', '记录'],
+      defaultTagName: '教程',
+      catchAll: true,
     ),
   ];
 
@@ -90,24 +43,42 @@ class SmartCategoryService {
 
   /// 执行一轮智能分类，返回成功条数。
   static Future<int> run(DatabaseService db) async {
-    // 1. 用户标签 → 命中簇。
+    // 1. 用户标签 → 命中簇；缺失的簇自动创建内置标签。
     final List<NoteTag> tags = await db.getTags();
     final Map<String, _SmartCategoryRule> tagToRule = <String, _SmartCategoryRule>{};
-    for (final NoteTag tag in tags) {
-      if (tag.id == DatabaseService.hiddenTagId) continue;
-      final String name = tag.name.trim().toLowerCase();
-      if (name.isEmpty) continue;
-      for (final _SmartCategoryRule rule in _rules) {
+    for (final _SmartCategoryRule rule in _rules) {
+      NoteTag? hit;
+      for (final NoteTag tag in tags) {
+        if (tag.id == DatabaseService.hiddenTagId) continue;
+        final String name = tag.name.trim().toLowerCase();
+        if (name.isEmpty) continue;
         if (rule.matchesLabel(name)) {
-          tagToRule[tag.id] = rule;
+          hit = tag;
           break;
         }
       }
+      if (hit == null) {
+        // 自动创建内置标签，保证智能分类总能执行。
+        try {
+          await db.addTag(rule.defaultTagName);
+          final List<NoteTag> after = await db.getTags();
+          for (final NoteTag tag in after) {
+            if (tag.id == DatabaseService.hiddenTagId) continue;
+            if (tag.name.trim().toLowerCase() ==
+                rule.defaultTagName.toLowerCase()) {
+              hit = tag;
+              break;
+            }
+          }
+        } catch (_) {
+          // 创建失败则跳过该簇。
+        }
+      }
+      if (hit != null) {
+        tagToRule[hit.id] = rule;
+      }
     }
-    if (tagToRule.isEmpty) {
-      // 没有任何标签能对应到内置簇，无法智能分类。
-      return 0;
-    }
+    if (tagToRule.isEmpty) return 0;
 
     // 2. 拉取全部便签，只处理未分类的（最多 3000 条足够日常使用）。
     final List<Quote> all = await db.getUserQuotes(
@@ -156,14 +127,22 @@ class SmartCategoryService {
   }
 }
 
-/// 一个分类簇：labelKeywords 匹配标签名，keywords 匹配便签正文。
+/// 一个分类簇：labelKeywords 匹配标签名，形态规则匹配便签正文。
 class _SmartCategoryRule {
   const _SmartCategoryRule({
     required this.labelKeywords,
-    required this.keywords,
+    required this.defaultTagName,
+    this.urlKeywords = const <String>[],
+    this.digitBased = false,
+    this.catchAll = false,
+    this.keywords = const <String>[],
   });
 
   final List<String> labelKeywords;
+  final String defaultTagName;
+  final List<String> urlKeywords;
+  final bool digitBased;
+  final bool catchAll;
   final List<String> keywords;
 
   /// 标签名是否属于本簇。
@@ -174,8 +153,29 @@ class _SmartCategoryRule {
     return false;
   }
 
-  /// 正文命中本簇关键词的个数。
+  /// 正文命中本簇的得分；0 表示不命中。
   int score(String bodyLower) {
+    if (catchAll) return 1;
+    if (urlKeywords.isNotEmpty) {
+      for (final String k in urlKeywords) {
+        if (bodyLower.contains(k)) return 5;
+      }
+      return 0;
+    }
+    if (digitBased) {
+      final String trimmed = bodyLower.trimLeft();
+      if (trimmed.isEmpty) return 0;
+      // 开头是数字，或数字字符占比 ≥ 35%（账号 / 密码 / 卡号类便签）。
+      final int first = trimmed.codeUnitAt(0);
+      if (first >= 0x30 && first <= 0x39) return 4;
+      int digits = 0;
+      for (int i = 0; i < bodyLower.length; i++) {
+        final int c = bodyLower.codeUnitAt(i);
+        if (c >= 0x30 && c <= 0x39) digits++;
+      }
+      if (digits * 100 ~/ bodyLower.length >= 35) return 4;
+      return 0;
+    }
     int s = 0;
     for (final String k in keywords) {
       if (bodyLower.contains(k)) s++;

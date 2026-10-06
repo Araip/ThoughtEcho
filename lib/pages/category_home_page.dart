@@ -447,6 +447,8 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
   List<NoteTag> _tags = const <NoteTag>[];
   final Set<String> _selectedIds = <String>{};
   String? _filterTagId;
+  /// 加载序号守卫：标签筛选快速切换时，旧请求的结果不覆盖新请求。
+  int _loadSeq = 0;
 
   bool get _selectionMode => _selectedIds.isNotEmpty;
 
@@ -459,6 +461,7 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
   }
 
   Future<void> _load() async {
+    final int seq = ++_loadSeq;
     if (!mounted) return;
     final DatabaseService db = context.read<DatabaseService>();
     List<Quote> quotes = const <Quote>[];
@@ -491,12 +494,27 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
         ..sort(
           (Quote a, Quote b) => b.date.compareTo(a.date),
         );
-      // 定制版：「全部便签」只显示**未分类**的便签。已分到任何分类/标签
-      // （例如“C类日常”）的便签不再出现，这样一看就知道还剩多少没分类。
+      // 定制版：「全部便签」默认只显示**未分类**的便签，一眼看出还剩多少没分类；
+      // 但在「全部便签」里点了某个标签 chip 时，改为展示该标签下的**全部**便签
+      // （包括已分类的），避免“明明放进标签却看不到”的问题。
       if (cid == null) {
-        quotes = quotes
-            .where((Quote q) => !SmartCategoryService.isCategorized(q))
-            .toList();
+        if (_filterTagId == null) {
+          quotes = quotes
+              .where((Quote q) => !SmartCategoryService.isCategorized(q))
+              .toList();
+        } else {
+          final List<Quote> byTag = await db.getUserQuotes(
+            tagIds: <String>[_filterTagId!],
+            limit: 500,
+          );
+          final Map<String, Quote> tagMerged = <String, Quote>{};
+          for (final Quote q in byTag) {
+            final String? id = q.id;
+            if (id != null) tagMerged[id] = q;
+          }
+          quotes = tagMerged.values.toList()
+            ..sort((Quote a, Quote b) => b.date.compareTo(a.date));
+        }
       }
     } catch (_) {
       quotes = const <Quote>[];
@@ -506,7 +524,7 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
     } catch (_) {
       tags = const <NoteTag>[];
     }
-    if (!mounted) return;
+    if (!mounted || seq != _loadSeq) return;
     final Set<String> alive = quotes
         .map((Quote q) => q.id)
         .whereType<String>()
@@ -530,6 +548,14 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
     final String? f = _filterTagId;
     if (f == null) return _quotes;
     return _quotes.where((Quote q) => q.tagIds.contains(f)).toList();
+  }
+
+  /// 当前筛选标签的名称（用于标题显示）。
+  String get _filterTagName {
+    for (final NoteTag t in _tags) {
+      if (t.id == _filterTagId) return t.name;
+    }
+    return '';
   }
 
   /// 便签所属分类名（用于「全部便签」里显示它在什么类下面）。
@@ -692,6 +718,16 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
 
   // ── UI ──────────────────────────────────────────────────
 
+  /// 应用标签筛选：切换后重新加载数据源（「全部便签」视图下标签子集会重新查询）。
+  void _applyTagFilter(String? tagId) {
+    if (tagId == _filterTagId) return;
+    setState(() {
+      _filterTagId = tagId;
+      _loading = true;
+    });
+    _load();
+  }
+
   Widget _buildTagFilterBar(ThemeData theme) {
     return SizedBox(
       height: 46,
@@ -704,7 +740,7 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
             child: FilterChip(
               label: Text('全部（${_quotes.length}）'),
               selected: _filterTagId == null,
-              onSelected: (_) => setState(() => _filterTagId = null),
+              onSelected: (_) => _applyTagFilter(null),
             ),
           ),
           for (final NoteTag tag in _tags)
@@ -713,9 +749,9 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
               child: FilterChip(
                 label: Text(tag.name),
                 selected: _filterTagId == tag.id,
-                onSelected: (_) => setState(() {
-                  _filterTagId = _filterTagId == tag.id ? null : tag.id;
-                }),
+                onSelected: (_) => _applyTagFilter(
+                  _filterTagId == tag.id ? null : tag.id,
+                ),
               ),
             ),
         ],
@@ -735,7 +771,9 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
           _selectionMode
               ? '已选 ${_selectedIds.length} 条'
               : widget.categoryId == null
-                  ? '全部便签（未分类 ${_quotes.length} 条）'
+                  ? (_filterTagId == null
+                      ? '全部便签（未分类 ${_quotes.length} 条）'
+                      : '标签：${_filterTagName}')
                   : widget.title,
         ),
         leading: _selectionMode
@@ -785,7 +823,9 @@ class _CategoryNotesPageState extends State<CategoryNotesPage> {
                           child: Text(
                             _quotes.isEmpty
                                 ? (widget.categoryId == null
-                                    ? '所有便签都已分类 🎉'
+                                    ? (_filterTagId == null
+                                        ? '所有便签都已分类 🎉'
+                                        : '该标签下还没有便签')
                                     : '这个分类下还没有便签')
                                 : '该标签下还没有便签',
                             style: theme.textTheme.bodyMedium?.copyWith(
